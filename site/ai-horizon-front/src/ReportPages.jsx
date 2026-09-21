@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getBlueprint } from './blueprint-content';
 import { getReportTemplate, getReportTemplateForBlueprint, reportConfidences, reportHorizons, reportSeverities, reportTemplates } from './report-content';
+import { clearReportComposerDraft, readReportComposerDraft, saveReportComposerDraft } from './report-draft-storage';
 import { SkillLinks } from './SkillPages';
 import './report-styles.css';
 
 const DRAFT_STATUS = 'Draft, review required';
+const AUTOSAVE_ERROR = 'This browser could not autosave the in-progress report. Keep this page open and check session storage access before continuing.';
+const DISCARD_ERROR = 'This browser could not discard the previous Workspace draft. Reset workshop data before leaving a shared device.';
 
 function newFinding() {
   return {
@@ -28,7 +31,7 @@ export function OutputsPage({ reports, workspaces, deleteReport, clearReports })
   return (
     <main className="outputs-page">
       <section className="outputs-hero"><div><p className="eyebrow">Decision-ready evidence</p><h1>PDF report outputs</h1><p>Turn a governed Workspace into a cited draft with accountable owners, remediation horizons, and visible release gates.</p></div><div className="output-principle"><span>Release authority</span><strong>Human reviewer</strong><p>Cloudflare OS prepares the artifact. Evidence owners approve it.</p></div></section>
-      <section className="report-privacy-note"><strong>Session-only evidence</strong><p>Report drafts remain only in this browser tab and are removed when the tab closes. Print the required PDF, then delete the draft before leaving a shared device.</p></section>
+      <section className="report-privacy-note"><strong>Session-scoped evidence</strong><p>Report drafts stay in this browser tab session and may survive reload or browser session restoration. Print the required PDF, then delete the draft or reset workshop data before leaving a shared device.</p></section>
       <section className="report-template-section"><div className="report-section-heading"><div><p className="eyebrow">Report catalog</p><h2>Choose the decision artifact.</h2></div><span>{reportTemplates.length} Blueprint templates</span></div><div className="report-template-grid">{reportTemplates.map((template, index) => <Link className="report-template-card" to={`/outputs/templates/${template.slug}`} key={template.slug}><div><span>{String(index + 1).padStart(2, '0')}</span><small>{template.accent}</small></div><h3>{template.title}</h3><p>{template.summary}</p><strong>Inspect template →</strong></Link>)}</div></section>
       <section className="report-library"><div className="report-section-heading"><div><p className="eyebrow">Session drafts</p><h2>Workspace reports</h2></div><div className="report-library-actions">{reports.length > 0 ? <button className="text-button compact" type="button" onClick={() => { if (window.confirm('Delete all session report drafts? This cannot be undone.')) clearReports(); }}>Delete all drafts</button> : null}{workspaces.length > 0 ? <Link className="button primary compact" to="/outputs/new">Create report draft →</Link> : <Link className="button primary compact" to="/blueprints">Create a Workspace first →</Link>}</div></div>{reports.length > 0 ? <div className="report-library-list">{reports.map((report) => <ReportLibraryCard report={report} workspaces={workspaces} deleteReport={deleteReport} key={report.id} />)}</div> : <div className="workspace-library-empty"><p>No report drafts in this session.</p><span>Start from a governed Workspace after evidence collection.</span></div>}</section>
     </main>
@@ -70,6 +73,13 @@ export function ReportCreate({ workspaces, createReport }) {
   const [assumptions, setAssumptions] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState('');
+  const [draftWorkspaceReady, setDraftWorkspaceReady] = useState('');
+  const previousWorkspaceId = useRef('');
+  const discardConfirmedEvidence = useRef(false);
+  const defaultTitle = workspace && template ? `${workspace.name}: ${template.title}` : '';
+  const hasDraftEvidence = Boolean((title && title !== defaultTitle) || assumptions || confirmed || Object.values(sections).some(Boolean)
+    || findings.some((finding) => finding.title || finding.rationale || finding.source || finding.affectedScope || finding.observedFact || finding.action || finding.owner));
+  const hasSwitchPromptEvidence = Boolean(Object.values(sections).some(Boolean) || assumptions || findings.some((finding) => finding.title || finding.source || finding.observedFact));
 
   useEffect(() => {
     const scoped = requestedBlueprint ? workspaces.filter((item) => item.blueprintSlug === requestedBlueprint) : workspaces;
@@ -78,20 +88,56 @@ export function ReportCreate({ workspaces, createReport }) {
   }, [requestedWorkspace, requestedBlueprint, workspaces]);
 
   useEffect(() => {
-    if (workspace && template) setTitle(`${workspace.name}: ${template.title}`);
-  }, [workspace?.id, workspace?.name, template?.title]);
+    discardConfirmedEvidence.current = hasSwitchPromptEvidence;
+  }, [hasSwitchPromptEvidence]);
 
   useEffect(() => {
-    if (template) setSections(Object.fromEntries(template.sections.map((section) => [section, ''])));
-  }, [template?.slug, workspaceId]);
+    if (!workspace || !template) return;
+    let discardFailed = false;
+    if (previousWorkspaceId.current && previousWorkspaceId.current !== workspace.id && discardConfirmedEvidence.current) {
+      discardFailed = !clearReportComposerDraft(sessionStorage, previousWorkspaceId.current);
+    }
+    previousWorkspaceId.current = workspace.id;
+    const draft = readReportComposerDraft(sessionStorage, workspace.id);
+    const validSections = draft && template.sections.every((section) => typeof draft.sections[section] === 'string');
+    if (draft && validSections) {
+      setTitle(draft.title);
+      setSections(draft.sections);
+      setFindings(draft.findings);
+      setAssumptions(draft.assumptions);
+      setConfirmed(draft.confirmed);
+    } else {
+      clearReportComposerDraft(sessionStorage, workspace.id);
+      setTitle(`${workspace.name}: ${template.title}`);
+      setSections(Object.fromEntries(template.sections.map((section) => [section, ''])));
+      setFindings([newFinding()]);
+      setAssumptions('');
+      setConfirmed(false);
+    }
+    setError(discardFailed ? DISCARD_ERROR : '');
+    setDraftWorkspaceReady(workspace.id);
+  }, [template?.slug, workspace?.id]);
 
   useEffect(() => {
-    if (!workspaceId) return;
-    setFindings([newFinding()]);
-    setAssumptions('');
-    setConfirmed(false);
-    setError('');
-  }, [workspaceId]);
+    if (!workspaceId || draftWorkspaceReady !== workspaceId) return;
+    if (!hasDraftEvidence) {
+      clearReportComposerDraft(sessionStorage, workspaceId);
+      return;
+    }
+    const saved = saveReportComposerDraft(sessionStorage, { workspaceId, title, sections, findings, assumptions, confirmed });
+    if (!saved) setError(AUTOSAVE_ERROR);
+    else setError((current) => current === AUTOSAVE_ERROR ? '' : current);
+  }, [assumptions, confirmed, draftWorkspaceReady, findings, hasDraftEvidence, sections, title, workspaceId]);
+
+  useEffect(() => {
+    if (!hasDraftEvidence) return undefined;
+    function warnBeforeUnload(event) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+    window.addEventListener('beforeunload', warnBeforeUnload);
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload);
+  }, [hasDraftEvidence]);
 
   if (workspaces.length === 0) return <Navigate to="/blueprints" replace />;
   if (requestedBlueprint && candidates.length === 0) return <Navigate to={`/workspaces/new?blueprint=${requestedBlueprint}`} replace />;
@@ -120,6 +166,7 @@ export function ReportCreate({ workspaces, createReport }) {
       setError('This browser could not save the session draft. Check session storage access and try again.');
       return;
     }
+    clearReportComposerDraft(sessionStorage, workspace.id);
     navigate(`/outputs/${id}`);
   }
 

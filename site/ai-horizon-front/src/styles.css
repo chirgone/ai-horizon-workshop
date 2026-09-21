@@ -29,6 +29,22 @@ body {
 a { color: inherit; text-decoration: none; }
 button, input, select { font: inherit; }
 
+.skip-link {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 100;
+  transform: translateY(-160%);
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--dark);
+  color: white;
+  font-weight: 800;
+}
+
+.skip-link:focus { transform: translateY(0); }
+.route-view h1:focus { outline: 3px solid var(--cf-orange-dark); outline-offset: 6px; }
+
 .layout-shell {
   min-height: 100vh;
   display: flex;
@@ -108,7 +124,7 @@ button, input, select { font: inherit; }
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-weight: 800;
-  color: #948e83;
+  color: #6f665e;
 }
 
 .sidebar-label-link {
@@ -119,7 +135,7 @@ button, input, select { font: inherit; }
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-weight: 800;
-  color: #948e83;
+  color: #6f665e;
 }
 
 .sidebar-label-link:hover {
@@ -293,6 +309,22 @@ button, input, select { font: inherit; }
   margin-left: 8px;
   color: var(--cf-orange-dark);
 }
+
+.workshop-reset {
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,.56);
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.workshop-reset:hover { border-color: rgba(201,95,18,.45); color: var(--cf-orange-dark); }
+.topbar-error { position: absolute; top: calc(100% + 8px); right: 5vw; max-width: 440px; margin: 0; padding: 10px 12px; border: 1px solid #d99b79; border-radius: 8px; background: #fff6f1; color: #7a2f1a; font-size: 11px; }
+.nav-backdrop { display: none; }
 
 .select-label {
   display: flex;
@@ -1561,7 +1593,7 @@ a.hub-card:hover {
 }
 
 .hub-card-action.muted {
-  color: #948e83;
+  color: #6f665e;
 }
 
 .blueprint-page,
@@ -2252,6 +2284,14 @@ a.hub-card:hover {
   margin-top: 24px;
 }
 
+.workspace-expiry { display: block; margin-top: 14px; color: #6f665e; font-size: 11px; font-weight: 700; }
+.workspace-danger-zone { display: flex; justify-content: space-between; gap: 24px; align-items: center; margin-top: 22px; padding: 24px 28px; border: 1px solid rgba(138,53,29,.2); border-radius: 20px; background: #fff6f1; }
+.workspace-danger-zone h2,.workspace-danger-zone p { margin: 0; }
+.workspace-danger-zone h2 { font-size: 25px; letter-spacing: -.035em; }
+.workspace-danger-zone div > p:last-child { margin-top: 7px; color: var(--muted); font-size: 12px; }
+.workspace-danger-zone > button { flex-shrink: 0; color: #7a2f1a; }
+.workspace-danger-zone > .form-error { width: 100%; }
+
 .workspace-record-aside p:not(.section-label) {
   padding: 11px 0;
   border-bottom: 1px solid var(--line);
@@ -2763,6 +2803,8 @@ a.hub-card:hover {
     top: 0;
     z-index: 40;
     transform: translateX(-100%);
+    visibility: hidden;
+    pointer-events: none;
     transition: transform 0.2s ease;
     box-shadow: 0 0 0 100vmax rgba(20, 18, 15, 0);
     width: min(84vw, 300px);
@@ -2770,8 +2812,12 @@ a.hub-card:hover {
 
   .app-sidebar.open {
     transform: translateX(0);
-    box-shadow: 0 0 0 100vmax rgba(20, 18, 15, 0.35);
+    visibility: visible;
+    pointer-events: auto;
+    box-shadow: 18px 0 44px rgba(20,18,15,.24);
   }
+
+  .nav-backdrop { display: block; position: fixed; inset: 0; z-index: 30; border: 0; background: rgba(20,18,15,.35); cursor: pointer; }
 
   .top-bar {
     height: auto;
@@ -2822,6 +2868,9 @@ a.hub-card:hover {
 }
 
 @media (max-width: 620px) {
+  .nav-toggle,.workshop-reset,.filter-row button { min-height: 44px; }
+  .nav-toggle { min-width: 44px; align-items: center; justify-content: center; }
+  .workshop-reset { max-width: 106px; }
   .topbar-context {
     font-size: 9.5px;
   }
@@ -2837,6 +2886,8 @@ a.hub-card:hover {
   .hub-grid {
     grid-template-columns: 1fr;
   }
+
+  .workspace-danger-zone { flex-direction: column; align-items: stretch; }
 
   .blueprint-page,
   .workspace-record-page {
@@ -2965,6 +3016,11 @@ a.hub-card:hover {
   .certificate-badge {
     padding: 24px;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  .sidebar-link:hover,.skill-card:hover,.blueprint-card:hover,.connector-card:hover,.hub-card:hover { transform: none; }
 }
 
 @media (max-width: 620px) {

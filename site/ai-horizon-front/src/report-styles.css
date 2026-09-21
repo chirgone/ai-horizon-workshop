@@ -208,6 +208,8 @@
   .report-cover,.report-release-gates,.report-document footer,.report-decision { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .report-cover { min-height: 245mm; break-after: page; }
   .report-release-gates,.remediation-table,.evidence-block,.finding-heading { break-inside: avoid; }
+  .report-section-title,.finding-heading { break-after: avoid; }
+  .report-document p,.report-document li { orphans: 3; widows: 3; }
 }
 
 @media (max-width: 620px) {

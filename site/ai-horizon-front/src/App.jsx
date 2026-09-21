@@ -4,12 +4,11 @@ import { blueprints, getBlueprint } from './blueprint-content';
 import { connectors, getBlueprintConnectors, getConnector } from './connector-content';
 import { OutputsPage, ReportCreate, ReportDetail, ReportTemplateDetail, WorkspaceReports } from './ReportPages';
 import { getReportTemplateForBlueprint, reportBelongsToKnownBlueprint, reportConfidences, reportHorizons, reportSeverities } from './report-content';
-import { clearAllReportSkillWorkflows, clearReportSkillWorkflow, SkillCatalog, SkillDetail, SkillLinks, SkillWorkflow } from './SkillPages';
+import { clearReportComposerDraft } from './report-draft-storage';
+import { SkillCatalog, SkillDetail, SkillLinks, SkillWorkflow } from './SkillPages';
 import { exercises, lessons, resources, shellCopy } from './workshop-content';
-
-const SETTINGS_KEY = 'ai-horizon-school-settings';
-const WORKSPACES_KEY = 'ai-horizon-workshop-v3-workspaces';
-const REPORTS_KEY = 'ai-horizon-workshop-v5-reports';
+import { getWorkspaceExpiration, isWorkspaceActive, REPORTS_KEY, resetWorkshopStorage, SETTINGS_KEY, withWorkspaceExpiration, WORKSPACES_KEY } from './workshop-storage';
+import { clearAllReportSkillWorkflows, clearReportSkillWorkflow, clearWorkspaceSkillWorkflow } from './workflow-storage';
 const routePrefixes = {
   lesson: 'lessons',
   exercise: 'exercises',
@@ -289,11 +288,28 @@ function readSessionJson(key, fallback) {
 function readWorkspaceRecords() {
   const stored = readJson(WORKSPACES_KEY, []);
   if (!Array.isArray(stored)) return [];
-
-  return stored.filter((item) => item
+  const valid = stored.filter((item) => item
     && ['id', 'name', 'owner', 'audience', 'blueprintSlug', 'createdAt'].every((key) => typeof item[key] === 'string' && item[key])
     && getBlueprint(item.blueprintSlug)
     && !Number.isNaN(Date.parse(item.createdAt)));
+  const active = valid.filter((workspace) => {
+    if (isWorkspaceActive(workspace)) return true;
+    clearWorkspaceSkillWorkflow(localStorage, sessionStorage, workspace.id);
+    return !clearReportComposerDraft(sessionStorage, workspace.id);
+  }).map((workspace) => isWorkspaceActive(workspace) ? workspace : { ...workspace, status: 'Cleanup required' });
+  if (active.length !== stored.length) {
+    const activeIds = new Set(active.map((workspace) => workspace.id));
+    stored.filter((workspace) => typeof workspace?.id === 'string' && !activeIds.has(workspace.id)).forEach((workspace) => {
+      clearWorkspaceSkillWorkflow(localStorage, sessionStorage, workspace.id);
+      clearReportComposerDraft(sessionStorage, workspace.id);
+    });
+    try {
+      localStorage.setItem(WORKSPACES_KEY, JSON.stringify(active));
+    } catch {
+      // Expired records remain hidden if browser cleanup is unavailable.
+    }
+  }
+  return active;
 }
 
 function readReportRecords() {
@@ -302,7 +318,7 @@ function readReportRecords() {
   const workspaces = readWorkspaceRecords();
   const findingFields = ['id', 'title', 'rationale', 'source', 'retrievedAt', 'affectedScope', 'observedFact', 'action', 'owner'];
 
-  return stored.filter((item) => {
+  const active = stored.filter((item) => {
     if (!item || !reportBelongsToKnownBlueprint(item)) return false;
     const workspace = workspaces.find((record) => record.id === item.workspaceId);
     const template = getReportTemplateForBlueprint(item.blueprintSlug);
@@ -319,6 +335,14 @@ function readReportRecords() {
       && reportConfidences.includes(finding.confidence)
       && !Number.isNaN(Date.parse(finding.retrievedAt)));
   });
+  if (active.length !== stored.length) {
+    try {
+      sessionStorage.setItem(REPORTS_KEY, JSON.stringify(active));
+    } catch {
+      // Invalid drafts remain hidden if browser cleanup is unavailable.
+    }
+  }
+  return active;
 }
 
 function escapeRegExp(value) {
@@ -396,6 +420,8 @@ function formatDuration(entry, copy) {
 }
 
 export default function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const saved = readJson(SETTINGS_KEY, {});
   const locale = 'en';
   const [audience, setAudience] = useState(saved.audience || 'customer');
@@ -406,8 +432,63 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ locale, audience }));
+    try {
+      if (audience === 'customer') localStorage.removeItem(SETTINGS_KEY);
+      else localStorage.setItem(SETTINGS_KEY, JSON.stringify({ locale, audience }));
+    } catch {
+      // Preferences are optional; governed records use explicit guarded writes below.
+    }
   }, [audience]);
+
+  useEffect(() => {
+    setNavOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!navOpen) return undefined;
+    const navigation = document.getElementById('workshop-navigation');
+    const focusable = [...navigation.querySelectorAll('a[href],button:not([disabled])')];
+    focusable[0]?.focus();
+    function containNavigationFocus(event) {
+      if (event.key === 'Escape') {
+        setNavOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab' || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener('keydown', containNavigationFocus);
+    return () => {
+      document.removeEventListener('keydown', containNavigationFocus);
+      document.querySelector('.nav-toggle')?.focus();
+    };
+  }, [navOpen]);
+
+  useEffect(() => {
+    const expirableWorkspaces = workspaces.filter((workspace) => workspace.status !== 'Cleanup required');
+    if (expirableWorkspaces.length === 0) return undefined;
+    const nearestExpiration = Math.min(...expirableWorkspaces.map((workspace) => Date.parse(getWorkspaceExpiration(workspace))));
+    const delay = Math.min(Math.max(nearestExpiration - Date.now() + 50, 0), 2_147_483_647);
+    const timer = window.setTimeout(() => {
+      const activeWorkspaces = readWorkspaceRecords();
+      const activeIds = new Set(activeWorkspaces.map((workspace) => workspace.id));
+      workspaces.filter((workspace) => !activeIds.has(workspace.id)).forEach((workspace) => {
+        clearWorkspaceSkillWorkflow(localStorage, sessionStorage, workspace.id);
+        clearReportComposerDraft(sessionStorage, workspace.id);
+      });
+      setWorkspaces(activeWorkspaces);
+      setReports(readReportRecords());
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [workspaces]);
 
   useEffect(() => {
     setLessonProgress(readJson(keyFor('lessons', audience), []));
@@ -453,7 +534,8 @@ export default function App() {
     reports,
     createWorkspace: (workspace) => {
       const latest = readWorkspaceRecords();
-      const next = [workspace, ...latest.filter((item) => item.id !== workspace.id)];
+      const expiringWorkspace = withWorkspaceExpiration(workspace);
+      const next = [expiringWorkspace, ...latest.filter((item) => item.id !== workspace.id)];
       try {
         localStorage.setItem(WORKSPACES_KEY, JSON.stringify(next));
         setWorkspaces(next);
@@ -478,25 +560,68 @@ export default function App() {
       const deleted = current.find((report) => report.id === reportId);
       const next = current.filter((report) => report.id !== reportId);
       sessionStorage.setItem(REPORTS_KEY, JSON.stringify(next));
-      if (deleted) clearReportSkillWorkflow(deleted.workspaceId, deleted.id);
+      if (deleted) clearReportSkillWorkflow(sessionStorage, deleted.workspaceId, deleted.id);
       setReports(next);
     },
     clearReports: () => {
       sessionStorage.removeItem(REPORTS_KEY);
-      clearAllReportSkillWorkflows();
+      clearAllReportSkillWorkflows(sessionStorage);
       setReports([]);
+    },
+    deleteWorkspace: (workspaceId) => {
+      const nextWorkspaces = readWorkspaceRecords().filter((workspace) => workspace.id !== workspaceId);
+      const nextReports = readReportRecords().filter((report) => report.workspaceId !== workspaceId);
+      try {
+        sessionStorage.setItem(REPORTS_KEY, JSON.stringify(nextReports));
+        if (!clearReportComposerDraft(sessionStorage, workspaceId)) return false;
+        setReports(nextReports);
+      } catch {
+        return false;
+      }
+      clearWorkspaceSkillWorkflow(localStorage, sessionStorage, workspaceId);
+      try {
+        localStorage.setItem(WORKSPACES_KEY, JSON.stringify(nextWorkspaces));
+        setWorkspaces(nextWorkspaces);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    resetWorkshopData: () => {
+      const result = resetWorkshopStorage(localStorage, sessionStorage);
+      if (result.ok) {
+        setAudience('customer');
+        setLessonProgress([]);
+        setExerciseProgress([]);
+        setWorkspaces([]);
+        setReports([]);
+        navigate('/');
+        return true;
+      }
+      setWorkspaces(readWorkspaceRecords());
+      setReports(readReportRecords());
+      const retained = readJson(SETTINGS_KEY, {});
+      const retainedAudience = retained.audience || 'customer';
+      setAudience(retainedAudience);
+      setLessonProgress(readJson(keyFor('lessons', retainedAudience), []));
+      setExerciseProgress(readJson(keyFor('exercises', retainedAudience), []));
+      return false;
     },
   };
 
   return (
     <div className="layout-shell">
+      <a className="skip-link" href="#main-content" tabIndex={navOpen ? -1 : undefined}>Skip to main content</a>
       <Sidebar
         navOpen={navOpen}
         onNavigate={() => setNavOpen(false)}
         workspaces={workspaces}
       />
+      {navOpen ? <button className="nav-backdrop" type="button" aria-label="Close navigation" onClick={() => setNavOpen(false)} /> : null}
       <div className="main-area">
         <TopBar {...context} navOpen={navOpen} onToggleNav={() => setNavOpen((value) => !value)} />
+        <RouteEffects />
+        <div id="main-content" className="route-view" inert={navOpen ? true : undefined}>
         <Routes>
           <Route path="/" element={<Home {...context} />} />
           <Route path="/workspaces" element={<HubPage page={portalPages.workspaces}><WorkspaceLibrary workspaces={workspaces} /></HubPage>} />
@@ -507,7 +632,7 @@ export default function App() {
           <Route path="/skills" element={<SkillCatalog />} />
           <Route path="/skills/:slug" element={<SkillDetail />} />
           <Route path="/workspaces/new" element={<WorkspaceCreate createWorkspace={context.createWorkspace} />} />
-          <Route path="/workspaces/:workspaceId" element={<WorkspaceDetail workspaces={workspaces} reports={reports} />} />
+          <Route path="/workspaces/:workspaceId" element={<WorkspaceDetail workspaces={workspaces} reports={reports} deleteWorkspace={context.deleteWorkspace} />} />
           <Route path="/outputs" element={<OutputsPage reports={reports} workspaces={workspaces} deleteReport={context.deleteReport} clearReports={context.clearReports} />} />
           <Route path="/outputs/new" element={<ReportCreate workspaces={workspaces} createReport={context.createReport} />} />
           <Route path="/outputs/templates/:slug" element={<ReportTemplateDetail workspaces={workspaces} />} />
@@ -521,6 +646,7 @@ export default function App() {
           <Route path="/resources/:slug" element={<EntryPage type="resource" {...context} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </div>
       </div>
     </div>
   );
@@ -549,7 +675,7 @@ function Sidebar({ navOpen, onNavigate, workspaces }) {
         : location.pathname;
 
   return (
-    <nav className={`app-sidebar ${navOpen ? 'open' : ''}`}>
+    <nav id="workshop-navigation" aria-label="Workshop navigation" className={`app-sidebar ${navOpen ? 'open' : ''}`}>
       <Link className="sidebar-brand" to="/" onClick={onNavigate}>
         <span className="brand-mark">CF</span>
         <span><strong>Cloudflare OS</strong><small>MCP Blueprint Workshop</small></span>
@@ -562,7 +688,7 @@ function Sidebar({ navOpen, onNavigate, workspaces }) {
             const active = item.path === '/' ? activePath === '/' : activePath.startsWith(item.path);
             return (
               <li key={item.path}>
-                <Link className={`sidebar-link ${active ? 'active' : ''}`} to={item.path} onClick={onNavigate}>
+                <Link aria-current={active ? 'page' : undefined} className={`sidebar-link ${active ? 'active' : ''}`} to={item.path} onClick={onNavigate}>
                   <span className="nav-glyph" aria-hidden="true">{item.label.slice(0, 1)}</span>
                   <span>{item.label}</span>
                 </Link>
@@ -594,17 +720,45 @@ function Sidebar({ navOpen, onNavigate, workspaces }) {
   );
 }
 
-function TopBar({ navOpen, onToggleNav }) {
+function TopBar({ navOpen, onToggleNav, resetWorkshopData }) {
+  const [resetError, setResetError] = useState('');
+
+  function resetWorkshop() {
+    if (!window.confirm('Reset all workshop data in this browser? Workspaces, report drafts, workflow checklists, and progress will be deleted.')) return;
+    setResetError(resetWorkshopData() ? '' : 'This browser could not reset all workshop data. Check browser storage access and try again.');
+  }
+
   return (
     <header className="top-bar">
-      <button className={`nav-toggle ${navOpen ? 'active' : ''}`} onClick={onToggleNav} aria-label="Menu">
+      <button className={`nav-toggle ${navOpen ? 'active' : ''}`} onClick={onToggleNav} aria-label="Menu" aria-expanded={navOpen} aria-controls="workshop-navigation">
         <span />
         <span />
         <span />
       </button>
       <p className="topbar-context">MCP Blueprint Workshop <span>Customer edition</span></p>
+      <button className="workshop-reset" type="button" onClick={resetWorkshop} disabled={navOpen}>Reset workshop data</button>
+      {resetError ? <p className="topbar-error" role="alert">{resetError}</p> : null}
     </header>
   );
+}
+
+function RouteEffects() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const routeLabel = location.pathname.split('/').filter(Boolean)[0] || 'Home';
+    const reportDetail = /^\/outputs\/(?!new$|templates\/)[^/]+$/.test(location.pathname);
+    if (!reportDetail) document.title = `${routeLabel.charAt(0).toUpperCase()}${routeLabel.slice(1)} | Cloudflare OS`;
+    window.requestAnimationFrame(() => {
+      const heading = document.querySelector('.route-view h1');
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        heading.focus();
+      }
+    });
+  }, [location.pathname]);
+
+  return null;
 }
 
 function Home({ locale, lessonProgress, exerciseProgress, totalCompleted, totalRequired, nextRecommended }) {
@@ -695,7 +849,7 @@ function WorkspaceLibrary({ workspaces }) {
       <div className="workspace-library-heading"><div><p className="eyebrow">Browser-local records</p><h2>Your workshop workspaces</h2></div><Link className="button primary compact" to="/blueprints">Start from a Blueprint →</Link></div>
       {workspaces.length > 0 ? <div className="workspace-library-grid">{workspaces.map((workspace) => {
         const blueprint = getBlueprint(workspace.blueprintSlug);
-        return <Link className="workspace-library-card" to={`/workspaces/${workspace.id}`} key={workspace.id}><span>{workspace.status || 'Charter created'}</span><h3>{workspace.name}</h3><p>{blueprint?.title || 'Blueprint unavailable'}</p><small>{workspace.owner} · {new Date(workspace.createdAt).toLocaleDateString('en-US')}</small></Link>;
+         return <Link className="workspace-library-card" to={`/workspaces/${workspace.id}`} key={workspace.id}><span>{workspace.status || 'Charter created'}</span><h3>{workspace.name}</h3><p>{blueprint?.title || 'Blueprint unavailable'}</p><small>{workspace.owner} · Expires {new Date(getWorkspaceExpiration(workspace)).toLocaleString('en-US')}</small></Link>;
       })}</div> : <div className="workspace-library-empty"><p>No local Blueprint workspaces yet.</p><span>Select a Blueprint to create a governed workshop charter in this browser.</span></div>}
     </section>
   );
@@ -835,7 +989,7 @@ function WorkspaceCreate({ createWorkspace }) {
 
   return (
     <main className="workspace-create-page">
-      <section className="workspace-create-copy"><Link className="back-link" to={`/blueprints/${blueprint.slug}`}>← {blueprint.title}</Link><p className="eyebrow">Create governed workspace</p><h1>Prepare the boundary before connecting data.</h1><p>This record names the outcome, owner, and audience. It does not authorize MCP access or make account changes.</p><div className="selected-blueprint"><span>Selected Blueprint</span><strong>{blueprint.title}</strong><p>{blueprint.outcome}</p></div></section>
+      <section className="workspace-create-copy"><Link className="back-link" to={`/blueprints/${blueprint.slug}`}>← {blueprint.title}</Link><p className="eyebrow">Create governed workspace</p><h1>Prepare the boundary before connecting data.</h1><p>This record names the outcome, owner, and audience for 24 hours. Use workshop-safe labels instead of real customer identifiers. It does not authorize MCP access or make account changes.</p><div className="selected-blueprint"><span>Selected Blueprint</span><strong>{blueprint.title}</strong><p>{blueprint.outcome}</p></div></section>
       <form className="workspace-form" onSubmit={handleSubmit}>
         <div><p className="eyebrow">Workspace charter</p><h2>Define the operating context</h2></div>
         <label>Workspace name<input required maxLength="80" value={name} onChange={(event) => setName(event.target.value)} /></label>
@@ -849,23 +1003,32 @@ function WorkspaceCreate({ createWorkspace }) {
   );
 }
 
-function WorkspaceDetail({ workspaces, reports }) {
+function WorkspaceDetail({ workspaces, reports, deleteWorkspace }) {
   const { workspaceId } = useParams();
+  const navigate = useNavigate();
+  const [deleteError, setDeleteError] = useState('');
   const workspace = workspaces.find((item) => item.id === workspaceId);
   const blueprint = workspace ? getBlueprint(workspace.blueprintSlug) : null;
   const workspaceReport = reports.find((report) => report.workspaceId === workspaceId);
 
   if (!workspace || !blueprint) return <Navigate to="/workspaces" replace />;
 
+  function removeWorkspace() {
+    if (!window.confirm('Delete this Workspace, its session report drafts, and its workflow checklist? This cannot be undone.')) return;
+    if (deleteWorkspace(workspace.id)) navigate('/workspaces');
+    else setDeleteError('This browser could not delete the complete Workspace record. Check browser storage access and try again.');
+  }
+
   return (
     <main className="workspace-record-page">
-      <header className="workspace-record-hero"><div><p className="eyebrow">Workspace record</p><h1>{workspace.name}</h1><p>{blueprint.summary}</p></div><span className="status-pill">{workspace.status}</span></header>
+      <header className="workspace-record-hero"><div><p className="eyebrow">Workspace record</p><h1>{workspace.name}</h1><p>{blueprint.summary}</p><small className="workspace-expiry">Browser-local record expires {new Date(getWorkspaceExpiration(workspace)).toLocaleString('en-US')}.</small></div><span className="status-pill">{workspace.status}</span></header>
       <section className="workspace-record-grid">
         <div className="workspace-record-main"><p className="section-label">Preparation sequence</p><ol><li className="complete">Blueprint selected: {blueprint.title}</li><li className="complete">Owner assigned: {workspace.owner}</li><li className="complete">Audience defined: {workspace.audience}</li><li>Confirm account and data scope</li><li>Authorize minimum read-only MCP connections</li><li>Run one harmless retrieval per source</li></ol><div className="workspace-record-actions"><Link className="button primary" to="/lessons/workshop-setup">Define scope and connections →</Link><Link className="text-button" to={blueprint.nextPath}>Preview Blueprint run</Link><Link className="text-button" to={`/blueprints/${blueprint.slug}`}>Review Blueprint</Link></div></div>
         <aside className="workspace-record-aside"><p className="section-label">Operating boundary</p>{blueprint.guardrails.map((item) => <p key={item}>{item}</p>)}<Link to="/lessons/mcp-servers">Review connection guidance →</Link><ConnectorLinksSection blueprint={blueprint} compact /><SkillLinks blueprint={blueprint} compact /></aside>
       </section>
       <SkillWorkflow key={workspace.id} workspace={workspace} blueprint={blueprint} report={workspaceReport} />
       <WorkspaceReports workspace={workspace} reports={reports} />
+      <section className="workspace-danger-zone"><div><p className="section-label">Local data lifecycle</p><h2>Remove this workshop record</h2><p>Deletes this Workspace, its report drafts in the current session, and its workflow checklist from this browser.</p></div><button className="text-button compact" type="button" onClick={removeWorkspace}>Delete Workspace</button>{deleteError ? <p className="form-error" role="alert">{deleteError}</p> : null}</section>
     </main>
   );
 }

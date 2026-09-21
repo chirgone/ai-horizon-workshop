@@ -1,56 +1,8 @@
 import React, { useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { getBlueprintSkills, getSkill, skills } from './skill-content';
+import { clearWorkspaceQualityWorkflows, qualityWorkflowKey, readPreparedSkills, readQualityPrepared, workflowKey } from './workflow-storage';
 import './skill-styles.css';
-
-function workflowKey(workspaceId) {
-  return `ai-horizon-workshop-v6-workflow-${workspaceId}`;
-}
-
-function qualityWorkflowKey(workspaceId, reportId) {
-  return `${workflowKey(workspaceId)}-report-${reportId}`;
-}
-
-function readQualityPrepared(workspaceId, reportId) {
-  try {
-    return sessionStorage.getItem(qualityWorkflowKey(workspaceId, reportId)) === 'prepared';
-  } catch {
-    return false;
-  }
-}
-
-function clearQualityWorkflow(workspaceId) {
-  const prefix = `${workflowKey(workspaceId)}-report-`;
-  Object.keys(sessionStorage).filter((key) => key.startsWith(prefix)).forEach((key) => sessionStorage.removeItem(key));
-}
-
-export function clearReportSkillWorkflow(workspaceId, reportId) {
-  try {
-    sessionStorage.removeItem(qualityWorkflowKey(workspaceId, reportId));
-  } catch {
-    // Report deletion remains authoritative if browser storage cleanup is unavailable.
-  }
-}
-
-export function clearAllReportSkillWorkflows() {
-  try {
-    const prefix = 'ai-horizon-workshop-v6-workflow-';
-    Object.keys(sessionStorage).filter((key) => key.startsWith(prefix) && key.includes('-report-')).forEach((key) => sessionStorage.removeItem(key));
-  } catch {
-    // Report deletion remains authoritative if browser storage cleanup is unavailable.
-  }
-}
-
-function readPreparedSkills(workspaceId, allowedSkills) {
-  try {
-    const saved = JSON.parse(localStorage.getItem(workflowKey(workspaceId)) || '[]');
-    if (!Array.isArray(saved)) return [];
-    if (saved.length > allowedSkills.length || saved.some((slug, index) => slug !== allowedSkills[index].slug)) return [];
-    return [...saved];
-  } catch {
-    return [];
-  }
-}
 
 export function SkillCatalog() {
   const [query, setQuery] = useState('');
@@ -99,9 +51,9 @@ export function SkillWorkflow({ workspace, blueprint, report }) {
   const qualityStepIndex = workflowSkills.length - 1;
   const preparationSkills = workflowSkills.slice(0, qualityStepIndex);
   const [prepared, setPrepared] = useState(() => {
-    const base = readPreparedSkills(workspace.id, preparationSkills);
+    const base = readPreparedSkills(localStorage, workspace.id, preparationSkills);
     const qualityPrepared = report && base.length === preparationSkills.length
-      && readQualityPrepared(workspace.id, report.id);
+      && readQualityPrepared(sessionStorage, workspace.id, report.id);
     return qualityPrepared ? [...base, workflowSkills[qualityStepIndex].slug] : base;
   });
   const [storageError, setStorageError] = useState('');
@@ -131,7 +83,7 @@ export function SkillWorkflow({ workspace, blueprint, report }) {
     if (!window.confirm('Reset this Workspace workflow checklist?')) return;
     try {
       localStorage.removeItem(workflowKey(workspace.id));
-      clearQualityWorkflow(workspace.id);
+      clearWorkspaceQualityWorkflows(sessionStorage, workspace.id);
       setPrepared([]);
       setStorageError('');
     } catch {
