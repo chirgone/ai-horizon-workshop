@@ -280,6 +280,20 @@ button, select { font: inherit; }
   margin-left: auto;
 }
 
+.topbar-context {
+  margin: 0 0 0 auto;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.topbar-context span {
+  margin-left: 8px;
+  color: var(--cf-orange-dark);
+}
+
 .select-label {
   display: flex;
   gap: 6px;
@@ -1646,6 +1660,14 @@ a.hub-card:hover {
 }
 
 @media (max-width: 620px) {
+  .topbar-context {
+    font-size: 9.5px;
+  }
+
+  .topbar-context span {
+    display: none;
+  }
+
   .hub-page {
     padding-top: 48px;
   }

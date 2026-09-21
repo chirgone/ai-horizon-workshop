@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
-import { exercises, languageOptions, lessons, resources, shellCopy } from './content';
+import { exercises, lessons, resources, shellCopy } from './workshop-content';
 
 const SETTINGS_KEY = 'ai-horizon-school-settings';
 const routePrefixes = {
@@ -9,11 +9,9 @@ const routePrefixes = {
   resource: 'resources',
 };
 
-const visibleTextReplacements = {
+const legacyVisibleTextReplacements = {
   en: {
     'Super Seal': 'Cloudflare OS',
-    'live workshop': 'live course',
-    'workshop': 'course',
   },
   es: {
     'Super Seal': 'Cloudflare OS',
@@ -115,9 +113,6 @@ const visibleTextReplacements = {
     'sandbox': 'entorno aislado',
     'hosted path': 'ruta alojada',
     'hosted flow': 'flujo alojado',
-    'live workshop': 'curso en vivo',
-    'workshops': 'cursos',
-    'workshop': 'curso',
     'demo': 'demostracion',
   },
   pt: {
@@ -221,10 +216,13 @@ const visibleTextReplacements = {
     'sandbox': 'ambiente isolado',
     'hosted path': 'caminho hospedado',
     'hosted flow': 'fluxo hospedado',
-    'live workshop': 'curso ao vivo',
-    'workshops': 'cursos',
-    'workshop': 'curso',
     'demo': 'demonstracao',
+  },
+};
+
+const visibleTextReplacements = {
+  en: {
+    'Super Seal': 'Cloudflare OS',
   },
 };
 
@@ -243,7 +241,7 @@ const portalPages = {
     intro: 'Start with a governed workspace, connect only the context it needs, and keep every customer outcome isolated and auditable.',
     items: [
       { label: 'Start here', title: 'Installation workspace', body: 'Deploy your Cloudflare OS workspace through the existing hosted installation flow.', path: '/lessons/installation' },
-      { label: 'Product tour', title: 'Cloudflare OS interface', body: 'Learn how Home, Workspaces, Outputs, Skills, and shared controls fit together.', path: '/lessons/home' },
+      { label: 'Foundation', title: 'Governed workspace setup', body: 'Define the decision, owners, data boundary, and report outcome before connecting systems.', path: '/lessons/workshop-setup' },
       { label: 'Connector lab', title: 'MCP server workspace', body: 'Prepare the governed tool layer used by Blueprints and corporate test connectors.', path: '/lessons/mcp-servers' },
     ],
   },
@@ -252,10 +250,10 @@ const portalPages = {
     title: 'Blueprints',
     intro: 'Blueprints package trusted MCP sources, analysis instructions, and an executive-ready report outcome.',
     items: [
-      { label: 'Recommended', title: 'Cloudflare Account Audit Report', body: 'Assess account posture, surface configuration risk, and prioritize remediation.' },
-      { label: 'Recommended', title: 'Attack Surface and Risk Report', body: 'Map exposed services, risk signals, and the controls that reduce external attack paths.' },
-      { label: 'Recommended', title: 'AI Governance Readiness Report', body: 'Evaluate AI usage, policy coverage, observability, and governance gaps.' },
-      { label: 'Reusable capability', title: 'Super Skills', body: 'Explore reusable analysis and report-generation behaviors used by Blueprints.', path: '/lessons/skills' },
+      { label: 'Recommended', title: 'Cloudflare Account Audit Report', body: 'Assess account posture, surface configuration risk, and prioritize remediation.', path: '/exercises/run-account-audit' },
+      { label: 'Recommended', title: 'Attack Surface and Risk Report', body: 'Map exposed services, risk signals, and the controls that reduce external attack paths.', status: 'Coming soon' },
+      { label: 'Recommended', title: 'AI Governance Readiness Report', body: 'Evaluate AI usage, policy coverage, observability, and governance gaps.', status: 'Coming soon' },
+      { label: 'Reusable capability', title: 'Super Skills', body: 'Explore reusable analysis and report-generation behaviors used by Blueprints.', path: '/lessons/super-skills' },
     ],
   },
   outputs: {
@@ -266,7 +264,7 @@ const portalPages = {
       { label: 'PDF report', title: 'Security posture brief', body: 'Executive summary, prioritized findings, evidence, and recommended controls.' },
       { label: 'PDF report', title: 'Attack surface review', body: 'Exposure inventory, risk narrative, and a sequenced reduction plan.' },
       { label: 'PDF report', title: 'AI governance assessment', body: 'Governance maturity, control gaps, and an adoption-ready action plan.' },
-      { label: 'Workshop exercise', title: 'Build an output', body: 'Practice converting a governed workspace into a finished artifact.', path: '/exercises/exercise-outputs' },
+      { label: 'Workshop exercise', title: 'Build an output', body: 'Practice converting a governed workspace into a finished artifact.', path: '/exercises/generate-report' },
     ],
   },
   explore: {
@@ -276,14 +274,14 @@ const portalPages = {
     items: [
       { label: 'Foundation', title: 'Installation', body: 'Deploy the workspace used throughout the workshop.', path: '/lessons/installation' },
       { label: 'Connection', title: 'MCP Servers', body: 'Understand the governed connection layer for live tools and enterprise data.', path: '/lessons/mcp-servers' },
-      { label: 'Reusable capability', title: 'Super Skills', body: 'Package repeated analysis and report workflows as reusable capabilities.', path: '/lessons/skills' },
+      { label: 'Reusable capability', title: 'Super Skills', body: 'Package repeated analysis and report workflows as reusable capabilities.', path: '/lessons/super-skills' },
       { label: 'Documentation', title: 'Cloudflare Docs MCP', body: 'Review the official catalog, then connect the read-only endpoint at docs.mcp.cloudflare.com/mcp.', href: 'https://developers.cloudflare.com/agents/model-context-protocol/cloudflare/servers-for-cloudflare/' },
     ],
   },
 };
 
 function keyFor(type, audience) {
-  return `ai-horizon-school-progress-${type}-${audience}`;
+  return `ai-horizon-workshop-v2-progress-${type}-${audience}`;
 }
 
 function readJson(key, fallback) {
@@ -370,16 +368,15 @@ function formatDuration(entry, copy) {
 
 export default function App() {
   const saved = readJson(SETTINGS_KEY, {});
-  const [locale, setLocale] = useState(saved.locale || 'en');
+  const locale = 'en';
   const [audience, setAudience] = useState(saved.audience || 'customer');
-  const [studentName, setStudentName] = useState(saved.studentName || '');
   const [lessonProgress, setLessonProgress] = useState(() => readJson(keyFor('lessons', saved.audience || 'customer'), []));
   const [exerciseProgress, setExerciseProgress] = useState(() => readJson(keyFor('exercises', saved.audience || 'customer'), []));
   const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ locale, audience, studentName }));
-  }, [locale, audience, studentName]);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ locale, audience }));
+  }, [audience]);
 
   useEffect(() => {
     setLessonProgress(readJson(keyFor('lessons', audience), []));
@@ -388,21 +385,16 @@ export default function App() {
 
   const totalRequired = lessons.length + exercises.length;
   const totalCompleted = lessonProgress.length + exerciseProgress.length;
-  const courseCompleted = lessonProgress.length === lessons.length && exerciseProgress.length === exercises.length;
   const nextLesson = getNextIncomplete(lessons, lessonProgress);
   const nextExercise = getNextIncomplete(exercises, exerciseProgress);
   const nextRecommended = nextLesson ? { ...nextLesson, type: 'lesson' } : nextExercise ? { ...nextExercise, type: 'exercise' } : null;
 
   const context = {
     locale,
-    setLocale,
     audience,
     setAudience,
-    studentName,
-    setStudentName,
     lessonProgress,
     exerciseProgress,
-    courseCompleted,
     totalRequired,
     totalCompleted,
     nextRecommended,
@@ -433,7 +425,6 @@ export default function App() {
           <Route path="/lessons" element={<SectionPage type="lesson" {...context} />} />
           <Route path="/exercises" element={<SectionPage type="exercise" {...context} />} />
           <Route path="/resources" element={<SectionPage type="resource" {...context} />} />
-          <Route path="/certificate" element={<CertificatePage {...context} />} />
           <Route path="/lessons/:slug" element={<EntryPage type="lesson" {...context} />} />
           <Route path="/exercises/:slug" element={<EntryPage type="exercise" {...context} />} />
           <Route path="/resources/:slug" element={<EntryPage type="resource" {...context} />} />
@@ -460,15 +451,13 @@ function Sidebar({ navOpen, onNavigate }) {
       ? '/blueprints'
       : location.pathname.startsWith('/resources')
         ? '/explore'
-        : location.pathname.startsWith('/certificate')
-          ? '/outputs'
-          : location.pathname;
+        : location.pathname;
 
   return (
     <nav className={`app-sidebar ${navOpen ? 'open' : ''}`}>
       <Link className="sidebar-brand" to="/" onClick={onNavigate}>
         <span className="brand-mark">CF</span>
-        <span><strong>Cloudflare OS</strong><small>AI Horizon Workshop</small></span>
+        <span><strong>Cloudflare OS</strong><small>MCP Blueprint Workshop</small></span>
       </Link>
 
       <div className="sidebar-group">
@@ -504,8 +493,7 @@ function Sidebar({ navOpen, onNavigate }) {
   );
 }
 
-function TopBar({ locale, setLocale, courseCompleted, navOpen, onToggleNav }) {
-  const copy = shellCopy[locale];
+function TopBar({ navOpen, onToggleNav }) {
   return (
     <header className="top-bar">
       <button className={`nav-toggle ${navOpen ? 'active' : ''}`} onClick={onToggleNav} aria-label="Menu">
@@ -513,15 +501,12 @@ function TopBar({ locale, setLocale, courseCompleted, navOpen, onToggleNav }) {
         <span />
         <span />
       </button>
-      <div className="header-controls">
-        {courseCompleted ? <Link className="text-button compact" to="/certificate">{copy.viewCertificate}</Link> : null}
-        <label className="select-label"><span>{copy.language}</span><select value={locale} onChange={(event) => setLocale(event.target.value)}>{languageOptions.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
-      </div>
+      <p className="topbar-context">MCP Blueprint Workshop <span>Customer edition</span></p>
     </header>
   );
 }
 
-function Home({ locale, lessonProgress, exerciseProgress, totalCompleted, totalRequired, nextRecommended, courseCompleted }) {
+function Home({ locale, lessonProgress, exerciseProgress, totalCompleted, totalRequired, nextRecommended }) {
   const copy = shellCopy[locale];
   const startTarget = nextRecommended ? getEntryPath(nextRecommended.type, nextRecommended.slug) : getEntryPath('lesson', lessons[0].slug);
 
@@ -540,18 +525,10 @@ function Home({ locale, lessonProgress, exerciseProgress, totalCompleted, totalR
         <div className="hero-actions">
           <Link className="button primary" to={startTarget}>{totalCompleted === 0 ? copy.start : copy.resumeWhereYouLeftOff} <span>→</span></Link>
           <Link className="button secondary" to="/explore">Explore</Link>
-              {courseCompleted ? <Link className="button secondary" to="/certificate">{copy.viewCertificate}</Link> : null}
             </div>
           </div>
         </div>
-        <p className="landing-hint">{copy.courseProgress}: {totalCompleted}/{totalRequired}. {courseCompleted ? copy.certificateUnlocked : copy.browseHint}</p>
-        {courseCompleted ? (
-          <div className="completion-banner">
-            <p className="card-kicker">{copy.certificate}</p>
-            <h2>{copy.courseCompletedTitle}</h2>
-            <p>{copy.certificateUnlocked}</p>
-          </div>
-        ) : null}
+        <p className="landing-hint">{copy.courseProgress}: {totalCompleted}/{totalRequired}. {copy.browseHint}</p>
       </section>
 
       <SectionSummary
@@ -597,7 +574,7 @@ function HubPage({ page }) {
               <span className="hub-card-label">{item.label}</span>
               <h2>{item.title}</h2>
               <p>{item.body}</p>
-              {item.path || item.href ? <span className="hub-card-action">Open <span aria-hidden="true">→</span></span> : <span className="hub-card-action muted">Catalog preview</span>}
+              {item.path || item.href ? <span className="hub-card-action">Open <span aria-hidden="true">→</span></span> : <span className="hub-card-action muted">{item.status || 'Catalog preview'}</span>}
             </>
           );
 
@@ -760,65 +737,6 @@ function EntryPage(props) {
         </div>
       </article>
     </main>
-  );
-}
-
-function CertificatePage({ locale, courseCompleted, studentName, setStudentName }) {
-  const copy = shellCopy[locale];
-  const location = useLocation();
-  const sampleMode = new URLSearchParams(location.search).has('sample');
-  const completedOn = useMemo(
-    () => new Intl.DateTimeFormat(locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es-MX' : 'en-US', { dateStyle: 'long' }).format(new Date()),
-    [locale],
-  );
-
-  if (!courseCompleted && !sampleMode) {
-    return (
-      <main className="certificate-page">
-        <div className="certificate-shell locked">
-          <p className="eyebrow">{copy.certificate}</p>
-          <h1>{copy.certificateLocked}</h1>
-          <p>{copy.completionRule}</p>
-          <Link className="button primary" to="/">{copy.backToHome}</Link>
-        </div>
-      </main>
-    );
-  }
-
-  return (
-    <main className="certificate-page">
-      <div className="certificate-toolbar">
-        <label className="certificate-field">
-          <span>{copy.studentName}</span>
-          <input value={studentName} onChange={(event) => setStudentName(event.target.value)} placeholder={copy.studentNamePlaceholder} />
-        </label>
-        <button className="button primary" onClick={() => window.print()}>{copy.printCertificate}</button>
-      </div>
-      <section className="certificate-shell badge-certificate-shell">
-        <div className="certificate-badge" aria-label={`${copy.certificate}: Cloudflare OS Operator`}>
-          <div className="certificate-badge-core">
-            <CloudflareLogo />
-            <span className="certificate-ribbon">Completed</span>
-            <h1>Cloudflare OS</h1>
-            <p>OPERATOR</p>
-            <div className="certificate-badge-footer">
-              <strong>{studentName || copy.studentNamePlaceholder}</strong>
-              <span>{copy.completedOn} {completedOn}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-  );
-}
-
-function CloudflareLogo() {
-  return (
-    <svg className="cloudflare-logo" viewBox="0 0 470 96" role="img" aria-label="Cloudflare">
-      <path fill="#F48120" d="M118.3 68.7c3.1-10.7-3.4-20.6-14.8-22.6l-2.7-.5-1.4-2.4c-5.5-9.3-15.7-15.1-26.7-15.1-14.4 0-26.8 9.6-30.1 23.2l-.6 2.6-2.6.2C27.7 55 18.8 64.5 18.8 76.1c0 1.1.1 2.1.2 3.2h94.8c1.9-3.1 3.4-6.6 4.5-10.6Z" />
-      <path fill="#FAAD3F" d="M132.7 79.3c8.7 0 15.8-7 15.8-15.6S141.4 48 132.7 48c-2.2 0-4.3.4-6.2 1.2l-2.7 1.1-1.6-2.4c-3.7-5.5-9.8-8.8-16.5-8.8-1.5 0-3 .2-4.4.5 8.2 4.3 13.5 12.7 13.5 22.3 0 2.3-.3 4.7-1 7l-3 10.4h21.9Z" />
-      <text x="174" y="64" fill="#111111" fontFamily="Inter, Arial, sans-serif" fontSize="40" fontWeight="800" letterSpacing="3.5">CLOUDFLARE</text>
-    </svg>
   );
 }
 
