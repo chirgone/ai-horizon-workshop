@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { blueprints, getBlueprint } from './blueprint-content';
 import { exercises, lessons, resources, shellCopy } from './workshop-content';
 
 const SETTINGS_KEY = 'ai-horizon-school-settings';
+const WORKSPACES_KEY = 'ai-horizon-workshop-v3-workspaces';
 const routePrefixes = {
   lesson: 'lessons',
   exercise: 'exercises',
@@ -245,17 +247,6 @@ const portalPages = {
       { label: 'Connector lab', title: 'MCP server workspace', body: 'Prepare the governed tool layer used by Blueprints and corporate test connectors.', path: '/lessons/mcp-servers' },
     ],
   },
-  blueprints: {
-    eyebrow: 'Installable operating models',
-    title: 'Blueprints',
-    intro: 'Blueprints package trusted MCP sources, analysis instructions, and an executive-ready report outcome.',
-    items: [
-      { label: 'Recommended', title: 'Cloudflare Account Audit Report', body: 'Assess account posture, surface configuration risk, and prioritize remediation.', path: '/exercises/run-account-audit' },
-      { label: 'Recommended', title: 'Attack Surface and Risk Report', body: 'Map exposed services, risk signals, and the controls that reduce external attack paths.', status: 'Coming soon' },
-      { label: 'Recommended', title: 'AI Governance Readiness Report', body: 'Evaluate AI usage, policy coverage, observability, and governance gaps.', status: 'Coming soon' },
-      { label: 'Reusable capability', title: 'Super Skills', body: 'Explore reusable analysis and report-generation behaviors used by Blueprints.', path: '/lessons/super-skills' },
-    ],
-  },
   outputs: {
     eyebrow: 'Decision-ready evidence',
     title: 'Outputs',
@@ -290,6 +281,16 @@ function readJson(key, fallback) {
   } catch {
     return fallback;
   }
+}
+
+function readWorkspaceRecords() {
+  const stored = readJson(WORKSPACES_KEY, []);
+  if (!Array.isArray(stored)) return [];
+
+  return stored.filter((item) => item
+    && ['id', 'name', 'owner', 'audience', 'blueprintSlug', 'createdAt'].every((key) => typeof item[key] === 'string' && item[key])
+    && getBlueprint(item.blueprintSlug)
+    && !Number.isNaN(Date.parse(item.createdAt)));
 }
 
 function escapeRegExp(value) {
@@ -372,6 +373,7 @@ export default function App() {
   const [audience, setAudience] = useState(saved.audience || 'customer');
   const [lessonProgress, setLessonProgress] = useState(() => readJson(keyFor('lessons', saved.audience || 'customer'), []));
   const [exerciseProgress, setExerciseProgress] = useState(() => readJson(keyFor('exercises', saved.audience || 'customer'), []));
+  const [workspaces, setWorkspaces] = useState(readWorkspaceRecords);
   const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
@@ -382,6 +384,15 @@ export default function App() {
     setLessonProgress(readJson(keyFor('lessons', audience), []));
     setExerciseProgress(readJson(keyFor('exercises', audience), []));
   }, [audience]);
+
+  useEffect(() => {
+    function syncWorkspaces(event) {
+      if (event.key === WORKSPACES_KEY) setWorkspaces(readWorkspaceRecords());
+    }
+
+    window.addEventListener('storage', syncWorkspaces);
+    return () => window.removeEventListener('storage', syncWorkspaces);
+  }, []);
 
   const totalRequired = lessons.length + exercises.length;
   const totalCompleted = lessonProgress.length + exerciseProgress.length;
@@ -406,6 +417,18 @@ export default function App() {
       setLessonProgress([]);
       setExerciseProgress([]);
     },
+    workspaces,
+    createWorkspace: (workspace) => {
+      const latest = readWorkspaceRecords();
+      const next = [workspace, ...latest.filter((item) => item.id !== workspace.id)];
+      try {
+        localStorage.setItem(WORKSPACES_KEY, JSON.stringify(next));
+        setWorkspaces(next);
+        return true;
+      } catch {
+        return false;
+      }
+    },
   };
 
   return (
@@ -413,13 +436,17 @@ export default function App() {
       <Sidebar
         navOpen={navOpen}
         onNavigate={() => setNavOpen(false)}
+        workspaces={workspaces}
       />
       <div className="main-area">
         <TopBar {...context} navOpen={navOpen} onToggleNav={() => setNavOpen((value) => !value)} />
         <Routes>
           <Route path="/" element={<Home {...context} />} />
-          <Route path="/workspaces" element={<HubPage page={portalPages.workspaces} />} />
-          <Route path="/blueprints" element={<HubPage page={portalPages.blueprints} />} />
+          <Route path="/workspaces" element={<HubPage page={portalPages.workspaces}><WorkspaceLibrary workspaces={workspaces} /></HubPage>} />
+          <Route path="/blueprints" element={<BlueprintCatalog />} />
+          <Route path="/blueprints/:slug" element={<BlueprintDetail />} />
+          <Route path="/workspaces/new" element={<WorkspaceCreate createWorkspace={context.createWorkspace} />} />
+          <Route path="/workspaces/:workspaceId" element={<WorkspaceDetail workspaces={workspaces} />} />
           <Route path="/outputs" element={<HubPage page={portalPages.outputs} />} />
           <Route path="/explore" element={<HubPage page={portalPages.explore} />} />
           <Route path="/lessons" element={<SectionPage type="lesson" {...context} />} />
@@ -443,7 +470,7 @@ function toggleProgress(storageKey, slug, setter) {
   });
 }
 
-function Sidebar({ navOpen, onNavigate }) {
+function Sidebar({ navOpen, onNavigate, workspaces }) {
   const location = useLocation();
   const activePath = location.pathname.startsWith('/lessons')
     ? '/workspaces'
@@ -484,9 +511,15 @@ function Sidebar({ navOpen, onNavigate }) {
       <div className="sidebar-group bordered">
         <p className="sidebar-label">Recent workspaces</p>
         <div className="recent-workspaces">
-          <Link to="/lessons/installation" onClick={onNavigate}>Installation workspace</Link>
-          <Link to="/blueprints" onClick={onNavigate}>Account audit blueprint</Link>
-          <Link to="/lessons/mcp-servers" onClick={onNavigate}>MCP connector lab</Link>
+          {workspaces.length > 0 ? workspaces.slice(0, 3).map((workspace) => (
+            <Link to={`/workspaces/${workspace.id}`} onClick={onNavigate} key={workspace.id}>{workspace.name}</Link>
+          )) : (
+            <>
+              <Link to="/lessons/installation" onClick={onNavigate}>Installation workspace</Link>
+              <Link to="/blueprints/account-audit" onClick={onNavigate}>Account audit blueprint</Link>
+              <Link to="/lessons/mcp-servers" onClick={onNavigate}>MCP connector lab</Link>
+            </>
+          )}
         </div>
       </div>
     </nav>
@@ -559,7 +592,7 @@ function Home({ locale, lessonProgress, exerciseProgress, totalCompleted, totalR
   );
 }
 
-function HubPage({ page }) {
+function HubPage({ page, children }) {
   return (
     <main className="hub-page">
       <section className="hub-hero">
@@ -582,6 +615,171 @@ function HubPage({ page }) {
           if (item.href) return <a className="hub-card" href={item.href} target="_blank" rel="noreferrer" key={item.title}>{content}</a>;
           return <article className="hub-card" key={item.title}>{content}</article>;
         })}
+      </section>
+      {children}
+    </main>
+  );
+}
+
+function WorkspaceLibrary({ workspaces }) {
+  return (
+    <section className="workspace-library">
+      <div className="workspace-library-heading"><div><p className="eyebrow">Browser-local records</p><h2>Your workshop workspaces</h2></div><Link className="button primary compact" to="/blueprints">Start from a Blueprint →</Link></div>
+      {workspaces.length > 0 ? <div className="workspace-library-grid">{workspaces.map((workspace) => {
+        const blueprint = getBlueprint(workspace.blueprintSlug);
+        return <Link className="workspace-library-card" to={`/workspaces/${workspace.id}`} key={workspace.id}><span>{workspace.status || 'Charter created'}</span><h3>{workspace.name}</h3><p>{blueprint?.title || 'Blueprint unavailable'}</p><small>{workspace.owner} · {new Date(workspace.createdAt).toLocaleDateString('en-US')}</small></Link>;
+      })}</div> : <div className="workspace-library-empty"><p>No local Blueprint workspaces yet.</p><span>Select a Blueprint to create a governed workshop charter in this browser.</span></div>}
+    </section>
+  );
+}
+
+function BlueprintCatalog() {
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('All');
+  const categories = ['All', ...new Set(blueprints.map((blueprint) => blueprint.category))];
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = blueprints.filter((blueprint) => {
+    const matchesCategory = category === 'All' || blueprint.category === category;
+    const matchesQuery = !normalizedQuery || `${blueprint.title} ${blueprint.summary} ${blueprint.decision} ${blueprint.outcome}`.toLowerCase().includes(normalizedQuery);
+    return matchesCategory && matchesQuery;
+  });
+
+  return (
+    <main className="blueprint-page">
+      <section className="blueprint-hero">
+        <div>
+          <p className="eyebrow">Installable operating models</p>
+          <h1>Blueprint Catalog</h1>
+          <p>Choose a governed package of inputs, read-only MCP connections, evidence requirements, and a decision-ready PDF outcome.</p>
+        </div>
+        <div className="blueprint-count"><strong>{blueprints.length}</strong><span>workshop-ready Blueprints</span></div>
+      </section>
+
+      <section className="catalog-controls" aria-label="Blueprint filters">
+        <label className="catalog-search">
+          <span>Search Blueprints</span>
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by decision or outcome" type="search" />
+        </label>
+        <div className="filter-row">
+          {categories.map((item) => <button type="button" aria-pressed={category === item} className={category === item ? 'active' : ''} onClick={() => setCategory(item)} key={item}>{item}</button>)}
+        </div>
+      </section>
+
+      <section className="blueprint-grid" aria-live="polite">
+        {filtered.map((blueprint, index) => (
+          <Link className="blueprint-card" to={`/blueprints/${blueprint.slug}`} key={blueprint.slug}>
+            <div className="blueprint-card-top">
+              <span className="blueprint-index">{String(index + 1).padStart(2, '0')}</span>
+              <span className="status-pill">{blueprint.maturity}</span>
+            </div>
+            <p className="blueprint-category">{blueprint.category}</p>
+            <h2>{blueprint.title}</h2>
+            <p>{blueprint.summary}</p>
+            <div className="blueprint-card-footer"><span>{blueprint.connections.length} MCP sources</span><span>{blueprint.duration}</span><strong>View Blueprint →</strong></div>
+          </Link>
+        ))}
+        {filtered.length === 0 ? <div className="catalog-empty"><h2>No matching Blueprints</h2><p>Clear the search or select another category.</p></div> : null}
+      </section>
+
+      <section className="catalog-skills-callout">
+        <div><p className="eyebrow">Reusable capability layer</p><h2>Blueprints are powered by Super Skills.</h2></div>
+        <Link className="button primary compact" to="/lessons/super-skills">Explore Super Skills →</Link>
+      </section>
+    </main>
+  );
+}
+
+function BlueprintDetail() {
+  const { slug } = useParams();
+  const blueprint = getBlueprint(slug);
+
+  if (!blueprint) return <Navigate to="/blueprints" replace />;
+
+  return (
+    <main className="blueprint-detail">
+      <aside className="blueprint-detail-aside">
+        <Link className="back-link" to="/blueprints">← Blueprint Catalog</Link>
+        <p className="blueprint-category">{blueprint.category}</p>
+        <div className="blueprint-detail-meta"><p><strong>Status</strong><span>{blueprint.maturity}</span></p><p><strong>Workshop time</strong><span>{blueprint.duration}</span></p><p><strong>MCP sources</strong><span>{blueprint.connections.length}</span></p></div>
+        <Link className="button primary" to={`/workspaces/new?blueprint=${blueprint.slug}`}>Use this Blueprint →</Link>
+        <p className="aside-note">Creates a local workshop record. Connections remain read-only and require separate authorization.</p>
+      </aside>
+
+      <article className="blueprint-detail-content">
+        <header className="blueprint-detail-hero"><p className="eyebrow">MCP Blueprint</p><h1>{blueprint.title}</h1><p>{blueprint.summary}</p></header>
+        <section className="decision-panel"><span>Decision this Blueprint supports</span><p>{blueprint.decision}</p></section>
+        <BlueprintListSection title="Required inputs" items={blueprint.inputs} />
+        <section className="blueprint-section"><p className="section-label">MCP connection plan</p><div className="connection-list">{blueprint.connections.map((connection) => <div className="connection-card" key={connection.name}><div><h3>{connection.name}</h3><p>{connection.purpose}</p></div><span>{connection.access}</span></div>)}</div></section>
+        <BlueprintListSection title="Evidence requirements" items={blueprint.evidence} />
+        <section className="blueprint-section report-preview"><div><p className="section-label">PDF outcome</p><h2>{blueprint.outcome}</h2></div><ol>{blueprint.reportSections.map((section) => <li key={section}>{section}</li>)}</ol></section>
+        <BlueprintListSection title="Non-negotiable guardrails" items={blueprint.guardrails} guardrails />
+        <div className="blueprint-bottom-action"><p>Ready to prepare the governed workspace?</p><Link className="button primary" to={`/workspaces/new?blueprint=${blueprint.slug}`}>Use this Blueprint →</Link></div>
+      </article>
+    </main>
+  );
+}
+
+function BlueprintListSection({ title, items, guardrails = false }) {
+  return <section className={`blueprint-section ${guardrails ? 'guardrail-panel' : ''}`}><p className="section-label">{title}</p><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul></section>;
+}
+
+function WorkspaceCreate({ createWorkspace }) {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const blueprint = getBlueprint(searchParams.get('blueprint'));
+  const [name, setName] = useState(blueprint ? `${blueprint.title.replace(' Report', '')} Workspace` : '');
+  const [owner, setOwner] = useState('');
+  const [audience, setAudience] = useState('Security leadership');
+  const [formError, setFormError] = useState('');
+
+  if (!blueprint) return <Navigate to="/blueprints" replace />;
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    const cleanName = name.trim();
+    const cleanOwner = owner.trim();
+    if (!cleanName || !cleanOwner) {
+      setFormError('Enter a workspace name and accountable owner.');
+      return;
+    }
+    const id = `${blueprint.slug}-${Date.now()}`;
+    const saved = createWorkspace({ id, name: cleanName, owner: cleanOwner, audience, blueprintSlug: blueprint.slug, createdAt: new Date().toISOString(), status: 'Charter created' });
+    if (!saved) {
+      setFormError('This browser could not save the workspace. Check local storage access and try again.');
+      return;
+    }
+    navigate(`/workspaces/${id}`);
+  }
+
+  return (
+    <main className="workspace-create-page">
+      <section className="workspace-create-copy"><Link className="back-link" to={`/blueprints/${blueprint.slug}`}>← {blueprint.title}</Link><p className="eyebrow">Create governed workspace</p><h1>Prepare the boundary before connecting data.</h1><p>This record names the outcome, owner, and audience. It does not authorize MCP access or make account changes.</p><div className="selected-blueprint"><span>Selected Blueprint</span><strong>{blueprint.title}</strong><p>{blueprint.outcome}</p></div></section>
+      <form className="workspace-form" onSubmit={handleSubmit}>
+        <div><p className="eyebrow">Workspace charter</p><h2>Define the operating context</h2></div>
+        <label>Workspace name<input required maxLength="80" value={name} onChange={(event) => setName(event.target.value)} /></label>
+        <label>Accountable owner<input required maxLength="80" value={owner} onChange={(event) => setOwner(event.target.value)} placeholder="Name or role" /></label>
+        <label>Report audience<select value={audience} onChange={(event) => setAudience(event.target.value)}><option>Security leadership</option><option>Executive leadership</option><option>Technical operations</option><option>Governance committee</option></select></label>
+        <div className="form-boundary"><strong>Default boundary</strong><span>Read-only MCP access</span><span>Human-reviewed findings</span><span>No account changes</span></div>
+        {formError ? <p className="form-error" role="alert">{formError}</p> : null}
+        <button className="button primary" type="submit">Create workshop record →</button>
+      </form>
+    </main>
+  );
+}
+
+function WorkspaceDetail({ workspaces }) {
+  const { workspaceId } = useParams();
+  const workspace = workspaces.find((item) => item.id === workspaceId);
+  const blueprint = workspace ? getBlueprint(workspace.blueprintSlug) : null;
+
+  if (!workspace || !blueprint) return <Navigate to="/workspaces" replace />;
+
+  return (
+    <main className="workspace-record-page">
+      <header className="workspace-record-hero"><div><p className="eyebrow">Workspace record</p><h1>{workspace.name}</h1><p>{blueprint.summary}</p></div><span className="status-pill">{workspace.status}</span></header>
+      <section className="workspace-record-grid">
+        <div className="workspace-record-main"><p className="section-label">Preparation sequence</p><ol><li className="complete">Blueprint selected: {blueprint.title}</li><li className="complete">Owner assigned: {workspace.owner}</li><li className="complete">Audience defined: {workspace.audience}</li><li>Confirm account and data scope</li><li>Authorize minimum read-only MCP connections</li><li>Run one harmless retrieval per source</li></ol><div className="workspace-record-actions"><Link className="button primary" to="/lessons/workshop-setup">Define scope and connections →</Link><Link className="text-button" to={blueprint.nextPath}>Preview Blueprint run</Link><Link className="text-button" to={`/blueprints/${blueprint.slug}`}>Review Blueprint</Link></div></div>
+        <aside className="workspace-record-aside"><p className="section-label">Operating boundary</p>{blueprint.guardrails.map((item) => <p key={item}>{item}</p>)}<Link to="/lessons/mcp-servers">Review connection guidance →</Link></aside>
       </section>
     </main>
   );

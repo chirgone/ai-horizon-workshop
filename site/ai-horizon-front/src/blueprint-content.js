@@ -1,0 +1,96 @@
+export const blueprints = [
+  {
+    slug: 'account-audit',
+    title: 'Cloudflare Account Audit Report',
+    category: 'Security posture',
+    duration: '30-45 min',
+    maturity: 'Workshop ready',
+    summary: 'Assess account configuration, identify control gaps, and prioritize remediation with cited evidence.',
+    decision: 'Which account risks should we remediate first, who owns them, and what evidence supports that priority?',
+    outcome: 'An executive PDF with account scope, prioritized findings, evidence citations, owners, and a 30/60/90-day roadmap.',
+    inputs: [
+      'Cloudflare account and zone scope',
+      'Named security owner and report audience',
+      'Approved read-only access boundary',
+      'Decision deadline and remediation horizon',
+    ],
+    connections: [
+      { name: 'Cloudflare Documentation MCP', purpose: 'Control and product reference', access: 'Required, read-only' },
+      { name: 'Audit Logs', purpose: 'Configuration change evidence', access: 'Recommended, read-only' },
+      { name: 'GraphQL Analytics', purpose: 'Traffic and security signal context', access: 'Recommended, read-only' },
+    ],
+    evidence: [
+      'Account and zone configuration relevant to the approved scope',
+      'Recent administrative changes and actor attribution',
+      'Observed traffic or security signals supporting material findings',
+      'Explicit gaps where access or evidence is unavailable',
+    ],
+    reportSections: ['Executive decision', 'Scope and methodology', 'Prioritized findings', '30/60/90-day roadmap', 'Evidence appendix'],
+    guardrails: ['No configuration writes', 'No material claim without a citation', 'Human review owns final severity and risk acceptance'],
+    nextPath: '/exercises/run-account-audit',
+  },
+  {
+    slug: 'attack-surface-risk',
+    title: 'Attack Surface and Risk Report',
+    category: 'External exposure',
+    duration: '35-50 min',
+    maturity: 'Workshop ready',
+    summary: 'Map exposed services, validate external risk signals, and sequence controls that reduce reachable attack paths.',
+    decision: 'Which externally reachable assets create the most material risk, and which control changes reduce it fastest?',
+    outcome: 'A cited attack surface PDF with exposed assets, risk paths, control coverage, owners, and sequenced reduction actions.',
+    inputs: [
+      'Approved domains, zones, and IP ranges',
+      'Known business-critical applications',
+      'Security owner and application owner',
+      'Allowed external discovery boundary',
+    ],
+    connections: [
+      { name: 'Cloudflare Radar', purpose: 'External Internet and threat context', access: 'Required, read-only' },
+      { name: 'DNS Analytics', purpose: 'Hostname and query evidence', access: 'Recommended, read-only' },
+      { name: 'GraphQL Analytics', purpose: 'Exposure and traffic validation', access: 'Recommended, read-only' },
+    ],
+    evidence: [
+      'Externally reachable hostnames and services inside scope',
+      'Traffic, DNS, and threat signals linked to exposed assets',
+      'Existing edge controls and verified coverage gaps',
+      'Unknown ownership, stale assets, and contradictory evidence',
+    ],
+    reportSections: ['Executive exposure summary', 'Asset and service inventory', 'Risk paths', 'Control coverage', 'Sequenced reduction plan'],
+    guardrails: ['Passive and approved discovery only', 'No scanning outside the defined boundary', 'Asset owners validate critical exposure before release'],
+    nextPath: '/lessons/evidence-collection',
+  },
+  {
+    slug: 'ai-governance-readiness',
+    title: 'AI Governance Readiness Report',
+    category: 'AI governance',
+    duration: '35-50 min',
+    maturity: 'Workshop ready',
+    summary: 'Evaluate observed AI usage, policy coverage, visibility, and control ownership before scaling enterprise adoption.',
+    decision: 'Where can the organization safely scale AI, and which governance gaps must close before broader adoption?',
+    outcome: 'An AI governance PDF with maturity findings, observed usage, policy gaps, control owners, and an adoption roadmap.',
+    inputs: [
+      'Approved AI application and team scope',
+      'Current AI policy or stated operating principles',
+      'Security, legal, and data governance owners',
+      'Target AI use cases and adoption timeline',
+    ],
+    connections: [
+      { name: 'AI Gateway', purpose: 'Observed model and application usage', access: 'Required, read-only' },
+      { name: 'Cloudflare Documentation MCP', purpose: 'Control and capability reference', access: 'Required, read-only' },
+      { name: 'CASB', purpose: 'SaaS and shadow AI posture', access: 'Optional, read-only' },
+    ],
+    evidence: [
+      'Observed AI applications, models, teams, and usage patterns',
+      'Policy controls mapped to actual technical visibility',
+      'Data handling, logging, and ownership gaps',
+      'Unobserved or unverified usage recorded as an explicit limitation',
+    ],
+    reportSections: ['Executive readiness decision', 'Observed AI landscape', 'Governance maturity', 'Control gaps', 'Adoption roadmap'],
+    guardrails: ['Do not collect prompt content unless explicitly approved', 'Minimize personal and sensitive data', 'Legal and security owners approve policy conclusions'],
+    nextPath: '/lessons/security-review',
+  },
+];
+
+export function getBlueprint(slug) {
+  return blueprints.find((blueprint) => blueprint.slug === slug);
+}
