@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "validate:skills": "node scripts/validate-super-skills.mjs",
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy"
   },

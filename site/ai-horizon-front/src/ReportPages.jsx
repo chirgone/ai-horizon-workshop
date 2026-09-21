@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getBlueprint } from './blueprint-content';
 import { getReportTemplate, getReportTemplateForBlueprint, reportConfidences, reportHorizons, reportSeverities, reportTemplates } from './report-content';
+import { SkillLinks } from './SkillPages';
 import './report-styles.css';
 
 const DRAFT_STATUS = 'Draft, review required';
@@ -46,7 +47,7 @@ export function ReportTemplateDetail({ workspaces }) {
   if (!template || !blueprint) return <Navigate to="/outputs" replace />;
   const matchingWorkspaces = workspaces.filter((workspace) => workspace.blueprintSlug === blueprint.slug);
 
-  return <main className="report-template-detail"><aside><Link className="back-link" to="/outputs">← Outputs</Link><p className="blueprint-category">{template.accent}</p><div className="blueprint-detail-meta"><p><strong>Blueprint</strong><span>{blueprint.title}</span></p><p><strong>Sections</strong><span>{template.sections.length}</span></p><p><strong>Release gates</strong><span>{template.qualityGates.length}</span></p></div>{matchingWorkspaces.length > 0 ? <Link className="button primary" to={`/outputs/new?blueprint=${blueprint.slug}`}>Create report draft →</Link> : <Link className="button primary" to={`/workspaces/new?blueprint=${blueprint.slug}`}>Create matching Workspace →</Link>}</aside><article><header><p className="eyebrow">PDF-ready template</p><h1>{template.title}</h1><p>{template.summary}</p></header><section className="report-template-method"><span>Methodology</span><p>{template.methodology}</p></section><TemplateList title="Report structure" items={template.sections} numbered /><TemplateList title="Required evidence" items={template.requiredEvidence} /><TemplateList title="Release gates" items={template.qualityGates} gates /></article></main>;
+  return <main className="report-template-detail"><aside><Link className="back-link" to="/outputs">← Outputs</Link><p className="blueprint-category">{template.accent}</p><div className="blueprint-detail-meta"><p><strong>Blueprint</strong><span>{blueprint.title}</span></p><p><strong>Sections</strong><span>{template.sections.length}</span></p><p><strong>Release gates</strong><span>{template.qualityGates.length}</span></p></div>{matchingWorkspaces.length > 0 ? <Link className="button primary" to={`/outputs/new?blueprint=${blueprint.slug}`}>Create report draft →</Link> : <Link className="button primary" to={`/workspaces/new?blueprint=${blueprint.slug}`}>Create matching Workspace →</Link>}</aside><article><header><p className="eyebrow">PDF-ready template</p><h1>{template.title}</h1><p>{template.summary}</p></header><section className="report-template-method"><span>Methodology</span><p>{template.methodology}</p></section><TemplateList title="Report structure" items={template.sections} numbered /><TemplateList title="Required evidence" items={template.requiredEvidence} /><SkillLinks blueprint={blueprint} /><TemplateList title="Release gates" items={template.qualityGates} gates /></article></main>;
 }
 
 function TemplateList({ title, items, numbered = false, gates = false }) {

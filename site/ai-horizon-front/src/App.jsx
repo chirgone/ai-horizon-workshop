@@ -4,6 +4,7 @@ import { blueprints, getBlueprint } from './blueprint-content';
 import { connectors, getBlueprintConnectors, getConnector } from './connector-content';
 import { OutputsPage, ReportCreate, ReportDetail, ReportTemplateDetail, WorkspaceReports } from './ReportPages';
 import { getReportTemplateForBlueprint, reportBelongsToKnownBlueprint, reportConfidences, reportHorizons, reportSeverities } from './report-content';
+import { clearAllReportSkillWorkflows, clearReportSkillWorkflow, SkillCatalog, SkillDetail, SkillLinks, SkillWorkflow } from './SkillPages';
 import { exercises, lessons, resources, shellCopy } from './workshop-content';
 
 const SETTINGS_KEY = 'ai-horizon-school-settings';
@@ -259,7 +260,7 @@ const portalPages = {
       { label: 'Foundation', title: 'Installation', body: 'Deploy the workspace used throughout the workshop.', path: '/lessons/installation' },
       { label: 'Connection', title: 'MCP Servers', body: 'Understand the governed connection layer for live tools and enterprise data.', path: '/lessons/mcp-servers' },
       { label: 'Test systems', title: 'Corporate Test Connectors', body: 'Inspect the workshop-safe CRM, HR, collaboration, wiki, and identity contracts.', path: '/connectors' },
-      { label: 'Reusable capability', title: 'Super Skills', body: 'Package repeated analysis and report workflows as reusable capabilities.', path: '/lessons/super-skills' },
+      { label: 'Reusable capability', title: 'Super Skills', body: 'Inspect reusable evidence, analysis, planning, and quality contracts.', path: '/skills' },
       { label: 'Documentation', title: 'Cloudflare Docs MCP', body: 'Review the official catalog, then connect the read-only endpoint at docs.mcp.cloudflare.com/mcp.', href: 'https://developers.cloudflare.com/agents/model-context-protocol/cloudflare/servers-for-cloudflare/' },
     ],
   },
@@ -473,12 +474,16 @@ export default function App() {
       }
     },
     deleteReport: (reportId) => {
-      const next = readReportRecords().filter((report) => report.id !== reportId);
+      const current = readReportRecords();
+      const deleted = current.find((report) => report.id === reportId);
+      const next = current.filter((report) => report.id !== reportId);
       sessionStorage.setItem(REPORTS_KEY, JSON.stringify(next));
+      if (deleted) clearReportSkillWorkflow(deleted.workspaceId, deleted.id);
       setReports(next);
     },
     clearReports: () => {
       sessionStorage.removeItem(REPORTS_KEY);
+      clearAllReportSkillWorkflows();
       setReports([]);
     },
   };
@@ -499,6 +504,8 @@ export default function App() {
           <Route path="/blueprints/:slug" element={<BlueprintDetail />} />
           <Route path="/connectors" element={<ConnectorCatalog />} />
           <Route path="/connectors/:slug" element={<ConnectorDetail />} />
+          <Route path="/skills" element={<SkillCatalog />} />
+          <Route path="/skills/:slug" element={<SkillDetail />} />
           <Route path="/workspaces/new" element={<WorkspaceCreate createWorkspace={context.createWorkspace} />} />
           <Route path="/workspaces/:workspaceId" element={<WorkspaceDetail workspaces={workspaces} reports={reports} />} />
           <Route path="/outputs" element={<OutputsPage reports={reports} workspaces={workspaces} deleteReport={context.deleteReport} clearReports={context.clearReports} />} />
@@ -537,6 +544,8 @@ function Sidebar({ navOpen, onNavigate, workspaces }) {
         ? '/explore'
         : location.pathname.startsWith('/connectors')
           ? '/explore'
+          : location.pathname.startsWith('/skills')
+            ? '/explore'
         : location.pathname;
 
   return (
@@ -742,7 +751,7 @@ function BlueprintCatalog() {
 
       <section className="catalog-skills-callout">
         <div><p className="eyebrow">Reusable capability layer</p><h2>Blueprints are powered by Super Skills.</h2></div>
-        <Link className="button primary compact" to="/lessons/super-skills">Explore Super Skills →</Link>
+        <Link className="button primary compact" to="/skills">Explore Super Skills →</Link>
       </section>
     </main>
   );
@@ -770,6 +779,7 @@ function BlueprintDetail() {
         <BlueprintListSection title="Required inputs" items={blueprint.inputs} />
         <section className="blueprint-section"><p className="section-label">MCP connection plan</p><div className="connection-list">{blueprint.connections.map((connection) => <div className="connection-card" key={connection.name}><div><h3>{connection.name}</h3><p>{connection.purpose}</p></div><span>{connection.access}</span></div>)}</div></section>
         <ConnectorLinksSection blueprint={blueprint} />
+        <SkillLinks blueprint={blueprint} />
         <BlueprintListSection title="Evidence requirements" items={blueprint.evidence} />
         <section className="blueprint-section report-preview"><div><p className="section-label">PDF outcome</p><h2>{blueprint.outcome}</h2></div><ol>{blueprint.reportSections.map((section) => <li key={section}>{section}</li>)}</ol></section>
         <BlueprintListSection title="Non-negotiable guardrails" items={blueprint.guardrails} guardrails />
@@ -843,6 +853,7 @@ function WorkspaceDetail({ workspaces, reports }) {
   const { workspaceId } = useParams();
   const workspace = workspaces.find((item) => item.id === workspaceId);
   const blueprint = workspace ? getBlueprint(workspace.blueprintSlug) : null;
+  const workspaceReport = reports.find((report) => report.workspaceId === workspaceId);
 
   if (!workspace || !blueprint) return <Navigate to="/workspaces" replace />;
 
@@ -851,8 +862,9 @@ function WorkspaceDetail({ workspaces, reports }) {
       <header className="workspace-record-hero"><div><p className="eyebrow">Workspace record</p><h1>{workspace.name}</h1><p>{blueprint.summary}</p></div><span className="status-pill">{workspace.status}</span></header>
       <section className="workspace-record-grid">
         <div className="workspace-record-main"><p className="section-label">Preparation sequence</p><ol><li className="complete">Blueprint selected: {blueprint.title}</li><li className="complete">Owner assigned: {workspace.owner}</li><li className="complete">Audience defined: {workspace.audience}</li><li>Confirm account and data scope</li><li>Authorize minimum read-only MCP connections</li><li>Run one harmless retrieval per source</li></ol><div className="workspace-record-actions"><Link className="button primary" to="/lessons/workshop-setup">Define scope and connections →</Link><Link className="text-button" to={blueprint.nextPath}>Preview Blueprint run</Link><Link className="text-button" to={`/blueprints/${blueprint.slug}`}>Review Blueprint</Link></div></div>
-        <aside className="workspace-record-aside"><p className="section-label">Operating boundary</p>{blueprint.guardrails.map((item) => <p key={item}>{item}</p>)}<Link to="/lessons/mcp-servers">Review connection guidance →</Link><ConnectorLinksSection blueprint={blueprint} compact /></aside>
+        <aside className="workspace-record-aside"><p className="section-label">Operating boundary</p>{blueprint.guardrails.map((item) => <p key={item}>{item}</p>)}<Link to="/lessons/mcp-servers">Review connection guidance →</Link><ConnectorLinksSection blueprint={blueprint} compact /><SkillLinks blueprint={blueprint} compact /></aside>
       </section>
+      <SkillWorkflow key={workspace.id} workspace={workspace} blueprint={blueprint} report={workspaceReport} />
       <WorkspaceReports workspace={workspace} reports={reports} />
     </main>
   );

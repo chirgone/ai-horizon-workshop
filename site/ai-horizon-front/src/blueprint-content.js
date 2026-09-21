@@ -32,6 +32,7 @@ export const blueprints = [
       'flareid-identity': 'Test identity and group-claim boundaries.',
       'nexus-wiki': 'Test policy and control-ownership retrieval.',
     },
+    skillSlugs: ['evidence-register-builder', 'severity-rationale-reviewer', 'executive-summary-writer', 'remediation-roadmap-planner', 'report-quality-gate-auditor'],
     nextPath: '/exercises/run-account-audit',
   },
   {
@@ -68,6 +69,7 @@ export const blueprints = [
       'nexus-wiki': 'Test architecture and asset-ownership evidence.',
       'flareid-identity': 'Test identity context for exposed applications.',
     },
+    skillSlugs: ['evidence-register-builder', 'severity-rationale-reviewer', 'executive-summary-writer', 'remediation-roadmap-planner', 'report-quality-gate-auditor'],
     nextPath: '/lessons/evidence-collection',
   },
   {
@@ -105,6 +107,7 @@ export const blueprints = [
       'nexus-wiki': 'Test AI policy and architecture retrieval.',
       'flareid-identity': 'Test identity and group-based governance boundaries.',
     },
+    skillSlugs: ['evidence-register-builder', 'severity-rationale-reviewer', 'executive-summary-writer', 'remediation-roadmap-planner', 'report-quality-gate-auditor'],
     nextPath: '/lessons/security-review',
   },
 ];
