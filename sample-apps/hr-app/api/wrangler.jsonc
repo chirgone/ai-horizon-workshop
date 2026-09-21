@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hr-app-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "account_id": "053dcc599cdf0a49c41cccafe74e9d44",
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hr-app-db",
+      "database_id": "2170f074-b413-49b6-bf36-6a4e84af107d",
+      "migrations_dir": "migrations"
+    }
+  ]
+  // Secrets (set via `wrangler secret put`, not stored here):
+  //   ADMIN_INTERNAL_SECRET - shared secret that only the `web` worker's service binding
+  //                           sends, used to gate the /admin/* token-management routes.
+}

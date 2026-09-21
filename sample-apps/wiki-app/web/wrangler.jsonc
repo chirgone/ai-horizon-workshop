@@ -1,0 +1,39 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "wiki-app-web",
+  "main": "src/worker.ts",
+  "compatibility_date": "2025-01-01",
+  "account_id": "053dcc599cdf0a49c41cccafe74e9d44",
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    // Used to resolve "me" locally (no Cloudflare Access) or if the Access
+    // identity doesn't match any seeded user, so the dashboard always has
+    // something to show. Change to any seeded user's email as needed.
+    "DEV_FALLBACK_EMAIL": "nikita.crist@company.com",
+    // Shared parent domain every app in this demo suite is deployed under -
+    // wire-access.sh fills this in once it's created custom domains for
+    // everything, and it's used to build the "explore the rest of the suite"
+    // links on /about-demo. Leave blank otherwise (link section is omitted).
+    "ROOT_DOMAIN": "trustworthy-engine.sxplab.com"
+  },
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/admin/api/*", "/api/*"]
+  },
+  "services": [
+    {
+      // Service binding to the `api` worker - used to (1) fetch wiki data on behalf
+      // of the signed-in user via /internal/*, and (2) manage per-user API tokens
+      // from the /admin page via /admin/*. Never exposed publicly.
+      "binding": "API",
+      "service": "wiki-app-api"
+    }
+  ]
+  // Secrets (set via `wrangler secret put`, not stored here):
+  //   ADMIN_INTERNAL_SECRET - shared with the `api` worker, gates /admin/* there.
+  //   WEB_INTERNAL_SECRET   - shared with the `api` worker, gates /internal/* there.
+}

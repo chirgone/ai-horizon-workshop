@@ -1,0 +1,22 @@
+{
+  "name": "@crm-app/api",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "typecheck": "tsc --noEmit",
+    "deploy": "wrangler deploy",
+    "db:migrations:local": "wrangler d1 migrations apply crm-app-db --local",
+    "db:migrations:remote": "wrangler d1 migrations apply crm-app-db --remote"
+  },
+  "dependencies": {
+    "@crm-app/shared": "*",
+    "hono": "^4.13.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241230.0",
+    "typescript": "^5.7.3",
+    "wrangler": "^4.96.0"
+  }
+}

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+*.log
+.DS_Store
+
+# Local deployment settings - copy config.sh.example to config.sh and fill it in.
+# Never commit this: it holds (or can hold) your Cloudflare API token.
+config.sh
+
+# Generated at deploy time, never committed.
+.signing-key.pem
+.signing-public-jwk.txt

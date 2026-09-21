@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "crm-app-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "account_id": "053dcc599cdf0a49c41cccafe74e9d44",
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "crm-app-db",
+      "database_id": "e57a267b-e6a8-4db9-b0e7-9953015437ce",
+      "migrations_dir": "migrations"
+    }
+  ]
+  // Secrets (set via `wrangler secret put`, not stored here):
+  //   ADMIN_INTERNAL_SECRET - shared secret that only the `web` worker's service binding
+  //                           sends, used to gate the /admin/* token-management routes.
+  //   MCP_INTERNAL_SECRET   - shared secret that only the `mcp` worker sends.
+  //   WEB_INTERNAL_SECRET   - shared secret that only the `web` worker sends.
+}

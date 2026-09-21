@@ -1,0 +1,57 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "flareid-idp",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "account_id": "053dcc599cdf0a49c41cccafe74e9d44",
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    // Public app name shown on the login/admin pages.
+    "APP_NAME": "FlareID",
+    // Issuer URL this IdP identifies itself as in OIDC discovery + id_tokens.
+    // Must exactly match what's registered as the OIDC issuer in Cloudflare
+    // Access. Update to the deployed workers.dev/custom domain before deploying.
+    "ISSUER_URL": "https://idp.trustworthy-engine.sxplab.com",
+    // Public half of the RS256 signing keypair (see scripts/generate-keypair.mjs).
+    // Not secret - this is exactly what /jwks.json publishes.
+    "SIGNING_PUBLIC_JWK": "{\"kty\":\"RSA\",\"n\":\"1MJVtc7LzlaAURzMESJgvq3P2BMAvnZC1C1TsVTN06so8KjjgzkvI7jxbHR034y-lwPGbwc3oJEej5-q3q5BgN_rsH69Vd9g9q2AZbj_NO7k3L7aXml9qWZbaYboWxkftCOH4jvx8eRJRQVYMYvMOCKcMXnRHc7bqcAtfTZ_FDhCRR0rDwybDFKNN92xYeUBVqNIDrGwlkp87BKHkHBo0cT7UU6A9UOiOc-l-Dd-Im5Q-TwdyUXdGXapHCjVrGoJUyyrE1BOCyGtgHZrZ2mDvCzs0_Orx5Aa4F3NczioRjWwp9u2tNzJyZRAZMshWGzYgTXI0lNtborGnp1Pjw_JOw\",\"e\":\"AQAB\"}",
+    // Key id for the current signing key - bump this when rotating (see scripts/generate-keypair.mjs for the full rotation procedure).
+    "SIGNING_KEY_ID": "flareid-key-1",
+    // During a rotation window, also set these two to the *previous* key's public JWK/id:
+    //   "SIGNING_PUBLIC_JWK_PREVIOUS": "...",
+    //   "SIGNING_KEY_ID_PREVIOUS": "flareid-key-1"
+
+    // Shared parent domain every app in this demo suite is deployed under -
+    // wire-access.sh fills this in once it's created custom domains for
+    // everything, and it's used to build the "explore the rest of the suite"
+    // links on /about-demo. Leave blank otherwise (link section is omitted).
+    "ROOT_DOMAIN": "trustworthy-engine.sxplab.com"
+  },
+  "assets": {
+    // Static files (currently just the logo) served directly, falling through
+    // to the Worker for everything else - no ASSETS binding needed since
+    // nothing in code needs to fetch them programmatically.
+    "directory": "./public"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "flareid-db",
+      "database_id": "90ce17b5-d0cd-4e4d-9976-058f0f021d29",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      // Short-lived OIDC "authorize" request state, pending-MFA challenges, and rate-limit counters.
+      "binding": "SESSIONS_KV",
+      "id": "0fb7eb8b313c495baa938be235dacb7a"
+    }
+  ]
+  // Secrets (set via `wrangler secret put`, not stored here):
+  //   SIGNING_KEY_PKCS8   - PKCS8 PEM of the RS256 private key used to sign id_tokens.
+  //                         Generate with `npm run keygen` (see scripts/generate-keypair.mjs).
+  //   COOKIE_ENCRYPTION_KEY - any random string, signs the IdP session cookie.
+}

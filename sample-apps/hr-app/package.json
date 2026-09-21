@@ -1,0 +1,28 @@
+{
+  "name": "hr-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Workday-style HR demo app for the Cloudflare AI security workshop (web + api + mcp)",
+  "workspaces": [
+    "shared",
+    "api",
+    "mcp",
+    "web"
+  ],
+  "scripts": {
+    "seed:generate": "node shared/seed/generate-seed.mjs",
+    "dev:api": "npm run dev --workspace api",
+    "dev:mcp": "npm run dev --workspace mcp",
+    "dev:web": "npm run dev --workspace web",
+    "build": "npm run build --workspace shared && npm run build --workspace web",
+    "typecheck": "npm run typecheck --workspace shared && npm run typecheck --workspace api && npm run typecheck --workspace mcp && npm run typecheck --workspace web",
+    "deploy:api": "npm run deploy --workspace api",
+    "deploy:mcp": "npm run deploy --workspace mcp",
+    "deploy:web": "npm run deploy --workspace web",
+    "deploy:all": "npm run deploy:api && npm run deploy:mcp && npm run deploy:web"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "wrangler": "^4.96.0"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "collab-app-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "account_id": "053dcc599cdf0a49c41cccafe74e9d44",
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    // Base URL of the `api` worker.
+    "API_BASE_URL": "https://work-api.trustworthy-engine.sxplab.com",
+
+    // This MCP server is its own standalone OAuth 2.1 authorization server, but
+    // delegates end-user login to an "Access for SaaS" OIDC application acting as
+    // its upstream identity provider - see hr-app/README.md for how to create one
+    // (same pattern here).
+    "ACCESS_AUTHORIZATION_URL": "REPLACE_AFTER_ACCESS_FOR_SAAS_SETUP",
+    "ACCESS_TOKEN_URL": "REPLACE_AFTER_ACCESS_FOR_SAAS_SETUP",
+    "ACCESS_JWKS_URL": "REPLACE_AFTER_ACCESS_FOR_SAAS_SETUP"
+  },
+  "kv_namespaces": [
+    {
+      // Required by @cloudflare/workers-oauth-provider to store this MCP server's
+      // own OAuth clients, grants, tokens, and short-lived upstream-login state.
+      "binding": "OAUTH_KV",
+      "id": "9eb0802ddb8c4790a44b17cc0ea41d95"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "RelayMcpAgent",
+        "class_name": "RelayMcpAgent"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["RelayMcpAgent"]
+    }
+  ]
+  // Secrets (set via `wrangler secret put`, not stored here):
+  //   ACCESS_CLIENT_ID       - Client ID of the "Access for SaaS" OIDC application.
+  //   ACCESS_CLIENT_SECRET   - Client secret of that Access application.
+  //   COOKIE_ENCRYPTION_KEY  - Any random string (e.g. `openssl rand -hex 32`), used
+  //                            to sign the short-lived login-flow cookies/state.
+  //   MCP_INTERNAL_SECRET    - Shared secret sent to the `api` worker's internal
+  //                            /internal/* routes when looking up the logged-in
+  //                            user by email and minting their per-user API token.
+}

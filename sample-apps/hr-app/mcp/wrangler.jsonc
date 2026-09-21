@@ -1,0 +1,54 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hr-app-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "account_id": "053dcc599cdf0a49c41cccafe74e9d44",
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    // Base URL of the `api` worker. Point this at the deployed api.<workers.dev|domain>
+    // once deployed; defaults to local wrangler dev.
+    "API_BASE_URL": "https://hr-api.trustworthy-engine.sxplab.com",
+
+    // This MCP server is its own standalone OAuth 2.1 authorization server, but
+    // delegates end-user login to an "Access for SaaS" OIDC application acting as
+    // its upstream identity provider - see hr-app/README.md for how to create one.
+    // Fill these in with the values shown on that Access application's page.
+    "ACCESS_AUTHORIZATION_URL": "https://trustworthy-engine.cloudflareaccess.com/cdn-cgi/access/sso/oidc/fec5bd4387cf45c0319ee9c4644f66f62018dad6d12ca5d3261ae6dde148c294/authorization",
+    "ACCESS_TOKEN_URL": "https://trustworthy-engine.cloudflareaccess.com/cdn-cgi/access/sso/oidc/fec5bd4387cf45c0319ee9c4644f66f62018dad6d12ca5d3261ae6dde148c294/token",
+    "ACCESS_JWKS_URL": "https://trustworthy-engine.cloudflareaccess.com/cdn-cgi/access/sso/oidc/fec5bd4387cf45c0319ee9c4644f66f62018dad6d12ca5d3261ae6dde148c294/jwks"
+  },
+  "kv_namespaces": [
+    {
+      // Required by @cloudflare/workers-oauth-provider to store this MCP server's
+      // own OAuth clients, grants, tokens, and short-lived upstream-login state.
+      "binding": "OAUTH_KV",
+      "id": "83cbe6998189405eb81701446c9afc70"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "HrMcpAgent",
+        "class_name": "HrMcpAgent"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["HrMcpAgent"]
+    }
+  ]
+  // Secrets (set via `wrangler secret put`, not stored here):
+  //   ACCESS_CLIENT_ID       - Client ID of the "Access for SaaS" OIDC application.
+  //   ACCESS_CLIENT_SECRET   - Client secret of that Access application.
+  //   COOKIE_ENCRYPTION_KEY  - Any random string (e.g. `openssl rand -hex 32`), used
+  //                            to sign the short-lived login-flow cookies/state.
+  //   MCP_INTERNAL_SECRET    - Shared secret sent to the `api` worker's internal
+  //                            /internal/* routes when looking up the logged-in
+  //                            employee by email and minting their per-user API token.
+}

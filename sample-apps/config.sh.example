@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Copy this file to config.sh and fill in the values below, then run:
+#   ./deploy.sh
+# (which runs deploy-all.sh, then wire-access.sh, using this one config)
+#
+# config.sh is gitignored - it's the one place your real account ID/token live,
+# and it never gets committed.
+
+# The Cloudflare account to deploy everything into.
+# Find it at dash.cloudflare.com -> any domain's overview page (right sidebar).
+export CLOUDFLARE_ACCOUNT_ID=""
+
+# A single API Token used for the entire deployment - both `wrangler` (which
+# reads CLOUDFLARE_API_TOKEN directly; no `wrangler login` needed at all) and
+# the raw Cloudflare API calls wire-access.sh makes for Access/custom domains.
+#
+# Create one at dash.cloudflare.com -> My Profile -> API Tokens -> Create
+# Token -> Custom token, with:
+#   - Account > Workers Scripts > Edit
+#   - Account > Workers KV Storage > Edit
+#   - Account > D1 > Edit
+#   - Account > Access: Apps and Policies > Edit
+#   - Account > Access: Organizations, Identity Providers, and Groups > Edit
+#   - Account > Account Settings > Read
+#   - Zone > Workers Routes > Edit      (scoped to the zone you'll use below)
+#   - Zone > Zone > Read                (scoped to the zone you'll use below,
+#                                         or "All zones" if you're not sure
+#                                         which one yet - wire-access.sh lists
+#                                         them and lets you pick)
+export CLOUDFLARE_API_TOKEN=""
+
+# --- Optional ---
+# The zone (domain) to host all custom domains under, e.g. "example.com".
+# If you have exactly one zone in the account, wire-access.sh will auto-detect
+# it and you can leave this blank. If you have more than one, either set this
+# or wire-access.sh will show a numbered list and prompt you to choose.
+export ZONE_NAME=""
+
+# Set to "true" to rotate standalone secrets (FlareID's signing key, each
+# app's COOKIE_ENCRYPTION_KEY) on every re-run instead of only the first time.
+# Leave "false" for normal use - rotating these invalidates active sessions.
+export FORCE_ROTATE_STANDALONE_SECRETS="false"
