@@ -6,18 +6,20 @@ Date: 2026-09-21
 
 **Deployment is blocked pending explicit approval from Ivan Anguiano.**
 
-The automated Chromium preflight and Cloudflare Access checks passed. Safari and Firefox remain manual compatibility gates. No deploy command was executed.
+The automated Chrome preflight, Firefox UAT, and Cloudflare Access checks passed. Chrome and Firefox are the supported workshop browsers. Safari is advisory and does not block release. No deploy command was executed.
 
 ## Reproducible command
 
 ```bash
 cd site/ai-horizon-front
-npm run preflight:release
+npm run release:gate
 ```
 
 The command performs the non-deploying release gate, starts the production build locally, drives Google Chrome through the Chrome DevTools Protocol, creates synthetic Workspace and report records, and writes temporary review artifacts outside the repository.
 
 Set `CHROME_PATH` when Google Chrome is not installed at the default macOS application path.
+
+The release gate always runs the required Chrome and Firefox suites. Firefox 156 and `geckodriver` 0.37.1 were used for this release; install them with `brew install --cask firefox` and `brew install geckodriver`, or set `GECKODRIVER_PATH` when the driver is not available on `PATH`. Set `UAT_BROWSERS=safari` with `npm run uat:cross-browser` for a separate optional Safari pass; it cannot replace Firefox in `release:gate`.
 
 ## Automated results
 
@@ -53,6 +55,7 @@ The automated page-count check targets Chromium's generated PDF structure. Visua
 
 ## Cloudflare Access
 
+- Validation type: manual external request check on 2026-09-21.
 - An unauthenticated request to `https://ai-horizon.cf1demos.com/` returned `302` to the Cloudflare Access login flow.
 - The protected-resource challenge was present.
 - An authorized corporate session reached the application with `200`.
@@ -64,8 +67,8 @@ The automated page-count check targets Chromium's generated PDF structure. Visua
 | Browser | Status | Evidence |
 | --- | --- | --- |
 | Google Chrome 150 | Passed | Automated routes, responsive, accessibility, mobile keyboard, and PDF preflight |
-| Safari 26.5 | Manual gate | Installed, but `safaridriver --diagnose` required interactive enablement and timed out |
-| Firefox | Manual gate | Browser is not installed in the current environment |
+| Firefox 156 | Passed | 24 critical route and viewport cases, named controls, responsive layout, mobile keyboard flow, and visual screenshot |
+| Safari 26.5 | Advisory only | Not a supported workshop browser and not required for go-live |
 
 ## Installation invariant
 
@@ -78,9 +81,9 @@ The automated page-count check targets Chromium's generated PDF structure. Visua
 
 Before deployment approval:
 
-- Complete one manual Safari pass using `workshop/FACILITATOR-GUIDE.md`.
-- Complete one manual Firefox pass from an environment where Firefox is installed.
-- Confirm the three generated PDFs remain acceptable after those browser checks.
+- Run `npm run release:gate` for the required Chrome and Firefox gates.
+- Revalidate Cloudflare Access manually because the local command does not test the external policy.
+- Confirm the three generated PDFs remain acceptable.
 - Obtain Ivan Anguiano's explicit approval to run the deployment command.
 
 After an approved deployment:

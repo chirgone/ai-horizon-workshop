@@ -70,17 +70,30 @@ async function getFreePort() {
 async function stopProcess(process) {
   if (process.exitCode !== null) return;
   process.kill('SIGTERM');
-  await Promise.race([
-    new Promise((resolve) => process.once('exit', resolve)),
-    sleep(2_000),
+  const exited = await Promise.race([
+    new Promise((resolve) => process.once('exit', () => resolve(true))),
+    sleep(2_000).then(() => false),
   ]);
+  if (!exited && process.exitCode === null) {
+    const forcedExit = new Promise((resolve) => process.once('exit', resolve));
+    process.kill('SIGKILL');
+    await Promise.race([forcedExit, sleep(2_000)]);
+  }
+}
+
+function startProcess(command, args) {
+  const process = spawn(command, args, { stdio: 'ignore' });
+  process.startupError = null;
+  process.once('error', (error) => { process.startupError = error; });
+  return process;
 }
 
 async function waitFor(url, process, label, attempts = 80) {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (process.startupError) throw process.startupError;
     if (process.exitCode !== null) throw new Error(`${label} exited before it became ready`);
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: AbortSignal.timeout(1_000) });
       if (response.ok) return response;
     } catch {
       // The local process is still starting.
@@ -100,8 +113,13 @@ class CdpClient {
 
   async connect() {
     await new Promise((resolve, reject) => {
-      this.socket.addEventListener('open', resolve, { once: true });
-      this.socket.addEventListener('error', reject, { once: true });
+      const timer = setTimeout(() => reject(new Error('Timed out connecting to Chrome DevTools')), 15_000);
+      const complete = (callback) => (value) => {
+        clearTimeout(timer);
+        callback(value);
+      };
+      this.socket.addEventListener('open', complete(resolve), { once: true });
+      this.socket.addEventListener('error', complete(reject), { once: true });
     });
     this.socket.addEventListener('message', (event) => {
       const message = JSON.parse(event.data);
@@ -120,7 +138,14 @@ class CdpClient {
   send(method, params = {}) {
     const id = ++this.sequence;
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new Error(`Timed out waiting for Chrome DevTools ${method}`));
+      }, 30_000);
+      this.pending.set(id, {
+        resolve: (value) => { clearTimeout(timer); resolve(value); },
+        reject: (error) => { clearTimeout(timer); reject(error); },
+      });
       this.socket.send(JSON.stringify({ id, method, params }));
     });
   }
@@ -157,12 +182,20 @@ async function evaluate(client, expression) {
   return result.result.value;
 }
 
-async function navigate(client, origin, pathname) {
+async function navigate(client, origin, pathname, expected = {}) {
   const loaded = client.once('Page.loadEventFired');
   const navigation = await client.send('Page.navigate', { url: `${origin}${pathname}` });
   assert.equal(navigation.errorText, undefined, `Navigation to ${pathname} succeeded`);
   await loaded;
   await evaluate(client, 'document.fonts.ready');
+  const expectedPath = expected.expectedPath || pathname.split('?')[0];
+  const expectedSearch = expected.expectedSearch || '';
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const page = await evaluate(client, `({ pathname: location.pathname, search: location.search, heading: document.querySelector('h1')?.textContent?.trim() || '' })`);
+    if (page.pathname === expectedPath && page.search === expectedSearch && page.heading && (!expected.heading || page.heading === expected.heading)) return;
+    await sleep(20);
+  }
+  throw new Error(`Timed out waiting for the expected application content at ${pathname}`);
 }
 
 function createFixtureRecords() {
@@ -210,17 +243,17 @@ async function main() {
   const debuggingPort = await getFreePort();
   const previewOrigin = `http://127.0.0.1:${previewPort}`;
   const debuggingOrigin = `http://127.0.0.1:${debuggingPort}`;
-  const preview = spawn(path.resolve('node_modules/.bin/vite'), ['preview', '--host', '127.0.0.1', '--port', String(previewPort), '--strictPort'], { stdio: 'ignore' });
-  const chrome = spawn(chromePath, [
+  const preview = startProcess(path.resolve('node_modules/.bin/vite'), ['preview', '--host', '127.0.0.1', '--port', String(previewPort), '--strictPort']);
+  const chrome = startProcess(chromePath, [
     '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
     `--remote-debugging-port=${debuggingPort}`, `--user-data-dir=${profile}`, 'about:blank',
-  ], { stdio: 'ignore' });
+  ]);
   const browserErrors = [];
 
   try {
     await waitFor(previewOrigin, preview, 'Vite preview');
     await waitFor(`${debuggingOrigin}/json/version`, chrome, 'Google Chrome');
-    const targets = await (await fetch(`${debuggingOrigin}/json/list`)).json();
+    const targets = await (await fetch(`${debuggingOrigin}/json/list`, { signal: AbortSignal.timeout(5_000) })).json();
     const target = targets.find((item) => item.type === 'page');
     assert.ok(target?.webSocketDebuggerUrl, 'Chrome page target is available');
     const client = new CdpClient(target.webSocketDebuggerUrl);
@@ -238,7 +271,7 @@ async function main() {
         width: viewport.width, height: viewport.height, deviceScaleFactor: 1, mobile: viewport.mobile,
       });
       for (const route of routeCases) {
-        await navigate(client, previewOrigin, route.pathname);
+        await navigate(client, previewOrigin, route.pathname, route);
         const page = await evaluate(client, `(() => ({
           pathname: location.pathname,
           search: location.search,
@@ -280,7 +313,7 @@ async function main() {
 
     const pdfResults = [];
     for (const report of fixtures.reports) {
-      await navigate(client, previewOrigin, `/outputs/${report.id}`);
+      await navigate(client, previewOrigin, `/outputs/${report.id}`, { heading: report.title });
       await client.send('Emulation.setEmulatedMedia', { media: 'print' });
       const printLayout = await evaluate(client, `({
         skipLinkHidden: getComputedStyle(document.querySelector('.skip-link')).display === 'none',

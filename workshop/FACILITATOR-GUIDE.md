@@ -14,8 +14,10 @@ Run the full Chromium and PDF release preflight before requesting production app
 
 ```bash
 cd site/ai-horizon-front
-npm run preflight:release
+npm run release:gate
 ```
+
+Use Google Chrome or Firefox for facilitator-led workshops. Safari is advisory and is not part of the required release gate.
 
 Do not run `npm run deploy` without Ivan Anguiano's explicit approval.
 

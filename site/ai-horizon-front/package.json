@@ -10,6 +10,8 @@
     "test": "node --test tests/*.test.mjs",
     "check": "npm run validate:skills && npm test && npm run build",
     "preflight:release": "npm run check && node scripts/release-preflight.mjs",
+    "uat:cross-browser": "npm run build && node scripts/cross-browser-uat.mjs",
+    "release:gate": "npm run preflight:release && UAT_BROWSERS=firefox npm run uat:cross-browser",
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy"
   },
