@@ -11,12 +11,12 @@ const routePrefixes = {
 
 const visibleTextReplacements = {
   en: {
-    'Cloudflare OS': 'Super Seal',
+    'Super Seal': 'Cloudflare OS',
     'live workshop': 'live course',
     'workshop': 'course',
   },
   es: {
-    'Cloudflare OS': 'Super Seal',
+    'Super Seal': 'Cloudflare OS',
     '`New skill`': '`New skill`',
     '`Skill name`': '`Skill name`',
     '`Description`': '`Description`',
@@ -121,7 +121,7 @@ const visibleTextReplacements = {
     'demo': 'demostracion',
   },
   pt: {
-    'Cloudflare OS': 'Super Seal',
+    'Super Seal': 'Cloudflare OS',
     '`New skill`': '`New skill`',
     '`Skill name`': '`Skill name`',
     '`Description`': '`Description`',
@@ -228,6 +228,60 @@ const visibleTextReplacements = {
   },
 };
 
+const primaryNavigation = [
+  { label: 'Home', path: '/' },
+  { label: 'Workspaces', path: '/workspaces' },
+  { label: 'Blueprints', path: '/blueprints' },
+  { label: 'Outputs', path: '/outputs' },
+  { label: 'Explore', path: '/explore' },
+];
+
+const portalPages = {
+  workspaces: {
+    eyebrow: 'Cloudflare OS',
+    title: 'Workspaces',
+    intro: 'Start with a governed workspace, connect only the context it needs, and keep every customer outcome isolated and auditable.',
+    items: [
+      { label: 'Start here', title: 'Installation workspace', body: 'Deploy your Cloudflare OS workspace through the existing hosted installation flow.', path: '/lessons/installation' },
+      { label: 'Product tour', title: 'Cloudflare OS interface', body: 'Learn how Home, Workspaces, Outputs, Skills, and shared controls fit together.', path: '/lessons/home' },
+      { label: 'Connector lab', title: 'MCP server workspace', body: 'Prepare the governed tool layer used by Blueprints and corporate test connectors.', path: '/lessons/mcp-servers' },
+    ],
+  },
+  blueprints: {
+    eyebrow: 'Installable operating models',
+    title: 'Blueprints',
+    intro: 'Blueprints package trusted MCP sources, analysis instructions, and an executive-ready report outcome.',
+    items: [
+      { label: 'Recommended', title: 'Cloudflare Account Audit Report', body: 'Assess account posture, surface configuration risk, and prioritize remediation.' },
+      { label: 'Recommended', title: 'Attack Surface and Risk Report', body: 'Map exposed services, risk signals, and the controls that reduce external attack paths.' },
+      { label: 'Recommended', title: 'AI Governance Readiness Report', body: 'Evaluate AI usage, policy coverage, observability, and governance gaps.' },
+      { label: 'Reusable capability', title: 'Super Skills', body: 'Explore reusable analysis and report-generation behaviors used by Blueprints.', path: '/lessons/skills' },
+    ],
+  },
+  outputs: {
+    eyebrow: 'Decision-ready evidence',
+    title: 'Outputs',
+    intro: 'Turn connected evidence into concise PDF reports with findings, severity, ownership, and a remediation roadmap.',
+    items: [
+      { label: 'PDF report', title: 'Security posture brief', body: 'Executive summary, prioritized findings, evidence, and recommended controls.' },
+      { label: 'PDF report', title: 'Attack surface review', body: 'Exposure inventory, risk narrative, and a sequenced reduction plan.' },
+      { label: 'PDF report', title: 'AI governance assessment', body: 'Governance maturity, control gaps, and an adoption-ready action plan.' },
+      { label: 'Workshop exercise', title: 'Build an output', body: 'Practice converting a governed workspace into a finished artifact.', path: '/exercises/exercise-outputs' },
+    ],
+  },
+  explore: {
+    eyebrow: 'Cloudflare OS catalog',
+    title: 'Explore',
+    intro: 'Find installation guidance, MCP connections, reusable skills, and the workshop material behind every Blueprint.',
+    items: [
+      { label: 'Foundation', title: 'Installation', body: 'Deploy the workspace used throughout the workshop.', path: '/lessons/installation' },
+      { label: 'Connection', title: 'MCP Servers', body: 'Understand the governed connection layer for live tools and enterprise data.', path: '/lessons/mcp-servers' },
+      { label: 'Reusable capability', title: 'Super Skills', body: 'Package repeated analysis and report workflows as reusable capabilities.', path: '/lessons/skills' },
+      { label: 'Documentation', title: 'Cloudflare Docs MCP', body: 'Review the official catalog, then connect the read-only endpoint at docs.mcp.cloudflare.com/mcp.', href: 'https://developers.cloudflare.com/agents/model-context-protocol/cloudflare/servers-for-cloudflare/' },
+    ],
+  },
+};
+
 function keyFor(type, audience) {
   return `ai-horizon-school-progress-${type}-${audience}`;
 }
@@ -291,7 +345,9 @@ function getEntryPath(type, slug) {
 }
 
 function getSectionPath(type) {
-  return `/${routePrefixes[type]}`;
+  if (type === 'lesson') return '/workspaces';
+  if (type === 'exercise') return '/blueprints';
+  return '/explore';
 }
 
 function getEntryTitle(entry, locale) {
@@ -299,9 +355,9 @@ function getEntryTitle(entry, locale) {
 }
 
 function getPageTypeLabel(type, copy) {
-  if (type === 'lesson') return copy.lessonType;
-  if (type === 'exercise') return copy.exerciseType;
-  return copy.guideType;
+  if (type === 'lesson') return 'Workspace';
+  if (type === 'exercise') return 'Blueprint practice';
+  return 'Explore';
 }
 
 function getNextIncomplete(collection, progress) {
@@ -314,7 +370,7 @@ function formatDuration(entry, copy) {
 
 export default function App() {
   const saved = readJson(SETTINGS_KEY, {});
-  const [locale, setLocale] = useState(saved.locale || 'es');
+  const [locale, setLocale] = useState(saved.locale || 'en');
   const [audience, setAudience] = useState(saved.audience || 'customer');
   const [studentName, setStudentName] = useState(saved.studentName || '');
   const [lessonProgress, setLessonProgress] = useState(() => readJson(keyFor('lessons', saved.audience || 'customer'), []));
@@ -363,9 +419,6 @@ export default function App() {
   return (
     <div className="layout-shell">
       <Sidebar
-        locale={locale}
-        lessonProgress={lessonProgress}
-        exerciseProgress={exerciseProgress}
         navOpen={navOpen}
         onNavigate={() => setNavOpen(false)}
       />
@@ -373,6 +426,10 @@ export default function App() {
         <TopBar {...context} navOpen={navOpen} onToggleNav={() => setNavOpen((value) => !value)} />
         <Routes>
           <Route path="/" element={<Home {...context} />} />
+          <Route path="/workspaces" element={<HubPage page={portalPages.workspaces} />} />
+          <Route path="/blueprints" element={<HubPage page={portalPages.blueprints} />} />
+          <Route path="/outputs" element={<HubPage page={portalPages.outputs} />} />
+          <Route path="/explore" element={<HubPage page={portalPages.explore} />} />
           <Route path="/lessons" element={<SectionPage type="lesson" {...context} />} />
           <Route path="/exercises" element={<SectionPage type="exercise" {...context} />} />
           <Route path="/resources" element={<SectionPage type="resource" {...context} />} />
@@ -395,70 +452,53 @@ function toggleProgress(storageKey, slug, setter) {
   });
 }
 
-function Sidebar({ locale, lessonProgress, exerciseProgress, navOpen, onNavigate }) {
-  const copy = shellCopy[locale];
+function Sidebar({ navOpen, onNavigate }) {
   const location = useLocation();
+  const activePath = location.pathname.startsWith('/lessons')
+    ? '/workspaces'
+    : location.pathname.startsWith('/exercises')
+      ? '/blueprints'
+      : location.pathname.startsWith('/resources')
+        ? '/explore'
+        : location.pathname.startsWith('/certificate')
+          ? '/outputs'
+          : location.pathname;
 
   return (
     <nav className={`app-sidebar ${navOpen ? 'open' : ''}`}>
       <Link className="sidebar-brand" to="/" onClick={onNavigate}>
-        <span className="brand-mark">AI</span>
-        <span><strong>Horizon</strong> School<small>{copy.powered}</small></span>
+        <span className="brand-mark">CF</span>
+        <span><strong>Cloudflare OS</strong><small>AI Horizon Workshop</small></span>
       </Link>
 
       <div className="sidebar-group">
-        <Link className="sidebar-label-link" to="/lessons" onClick={onNavigate}>{copy.lessons}</Link>
-        <ol className="sidebar-list">
-          {lessons.map((entry) => {
-            const href = getEntryPath('lesson', entry.slug);
-            const active = location.pathname === href;
-            const done = lessonProgress.includes(entry.slug);
+        <p className="sidebar-label">Navigate</p>
+        <ul className="sidebar-list primary-navigation">
+          {primaryNavigation.map((item) => {
+            const active = item.path === '/' ? activePath === '/' : activePath.startsWith(item.path);
             return (
-              <li key={entry.slug}>
-                <Link className={`sidebar-link ${active ? 'active' : ''}`} to={href} onClick={onNavigate}>
-                  <span><span className="sidebar-index">{entry.number}.</span> {getEntryTitle(entry, locale)}</span>
-                  {done ? <span className="sidebar-check">✓</span> : null}
+              <li key={item.path}>
+                <Link className={`sidebar-link ${active ? 'active' : ''}`} to={item.path} onClick={onNavigate}>
+                  <span className="nav-glyph" aria-hidden="true">{item.label.slice(0, 1)}</span>
+                  <span>{item.label}</span>
                 </Link>
               </li>
             );
           })}
-        </ol>
+        </ul>
       </div>
 
       <div className="sidebar-group bordered">
-        <Link className="sidebar-label-link" to="/exercises" onClick={onNavigate}>{copy.exercises}</Link>
-        <ol className="sidebar-list">
-          {exercises.map((entry) => {
-            const href = getEntryPath('exercise', entry.slug);
-            const active = location.pathname === href;
-            const done = exerciseProgress.includes(entry.slug);
-            return (
-              <li key={entry.slug}>
-                <Link className={`sidebar-link ${active ? 'active' : ''}`} to={href} onClick={onNavigate}>
-                  <span>{getEntryTitle(entry, locale)}</span>
-                  {done ? <span className="sidebar-check">✓</span> : null}
-                </Link>
-              </li>
-            );
-          })}
-        </ol>
+        <p className="sidebar-label">Favorites</p>
       </div>
 
       <div className="sidebar-group bordered">
-        <Link className="sidebar-label-link" to="/resources" onClick={onNavigate}>{copy.resources}</Link>
-        <ol className="sidebar-list">
-          {resources.map((entry) => {
-            const href = getEntryPath('resource', entry.slug);
-            const active = location.pathname === href;
-            return (
-              <li key={entry.slug}>
-                <Link className={`sidebar-link ${active ? 'active' : ''}`} to={href} onClick={onNavigate}>
-                  <span>{getEntryTitle(entry, locale)}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ol>
+        <p className="sidebar-label">Recent workspaces</p>
+        <div className="recent-workspaces">
+          <Link to="/lessons/installation" onClick={onNavigate}>Installation workspace</Link>
+          <Link to="/blueprints" onClick={onNavigate}>Account audit blueprint</Link>
+          <Link to="/lessons/mcp-servers" onClick={onNavigate}>MCP connector lab</Link>
+        </div>
       </div>
     </nav>
   );
@@ -499,7 +539,7 @@ function Home({ locale, lessonProgress, exerciseProgress, totalCompleted, totalR
             <p className="hero-support">{copy.heroSupport}</p>
         <div className="hero-actions">
           <Link className="button primary" to={startTarget}>{totalCompleted === 0 ? copy.start : copy.resumeWhereYouLeftOff} <span>→</span></Link>
-          <Link className="button secondary" to="/resources">{copy.resources}</Link>
+          <Link className="button secondary" to="/explore">Explore</Link>
               {courseCompleted ? <Link className="button secondary" to="/certificate">{copy.viewCertificate}</Link> : null}
             </div>
           </div>
@@ -518,27 +558,54 @@ function Home({ locale, lessonProgress, exerciseProgress, totalCompleted, totalR
         type="lesson"
         locale={locale}
         progress={lessonProgress}
-        heading={copy.lessons}
-        intro={copy.lessonsIntro}
+        heading="Workspaces"
+        intro="Follow the governed path from installation to connected Cloudflare OS operations."
         collection={lessons}
       />
       <SectionSummary
         type="exercise"
         locale={locale}
         progress={exerciseProgress}
-        heading={copy.exercises}
-        intro={copy.exercisesIntro}
+        heading="Blueprint practice"
+        intro="Practice the reusable actions that turn connected context into consistent outcomes."
         collection={exercises}
       />
       <SectionSummary
         type="resource"
         locale={locale}
         progress={[]}
-        heading={copy.resources}
-        intro={copy.aboutIntro}
+        heading="Explore"
+        intro="Open practical references, operating guidance, and workshop support material."
         collection={resources}
-        note={copy.optionalGuides}
       />
+    </main>
+  );
+}
+
+function HubPage({ page }) {
+  return (
+    <main className="hub-page">
+      <section className="hub-hero">
+        <p className="eyebrow">{page.eyebrow}</p>
+        <h1>{page.title}</h1>
+        <p>{page.intro}</p>
+      </section>
+      <section className="hub-grid" aria-label={`${page.title} catalog`}>
+        {page.items.map((item) => {
+          const content = (
+            <>
+              <span className="hub-card-label">{item.label}</span>
+              <h2>{item.title}</h2>
+              <p>{item.body}</p>
+              {item.path || item.href ? <span className="hub-card-action">Open <span aria-hidden="true">→</span></span> : <span className="hub-card-action muted">Catalog preview</span>}
+            </>
+          );
+
+          if (item.path) return <Link className="hub-card" to={item.path} key={item.title}>{content}</Link>;
+          if (item.href) return <a className="hub-card" href={item.href} target="_blank" rel="noreferrer" key={item.title}>{content}</a>;
+          return <article className="hub-card" key={item.title}>{content}</article>;
+        })}
+      </section>
     </main>
   );
 }
@@ -631,7 +698,7 @@ function EntryPage(props) {
   const previous = collection[currentIndex - 1];
   const next = collection[currentIndex + 1];
   const pageTypeLabel = getPageTypeLabel(props.type, copy);
-  const backLabel = props.type === 'lesson' ? copy.allLessons : props.type === 'exercise' ? copy.exercises : copy.resources;
+  const backLabel = props.type === 'lesson' ? 'Workspaces' : props.type === 'exercise' ? 'Blueprints' : 'Explore';
   const backPath = getSectionPath(props.type);
   const title = getEntryTitle(entry, locale);
   const duration = formatDuration(entry, copy);
@@ -728,11 +795,11 @@ function CertificatePage({ locale, courseCompleted, studentName, setStudentName 
         <button className="button primary" onClick={() => window.print()}>{copy.printCertificate}</button>
       </div>
       <section className="certificate-shell badge-certificate-shell">
-        <div className="certificate-badge" aria-label={`${copy.certificate}: Super Seal Operator`}>
+        <div className="certificate-badge" aria-label={`${copy.certificate}: Cloudflare OS Operator`}>
           <div className="certificate-badge-core">
             <CloudflareLogo />
             <span className="certificate-ribbon">Completed</span>
-            <h1>Super Seal</h1>
+            <h1>Cloudflare OS</h1>
             <p>OPERATOR</p>
             <div className="certificate-badge-footer">
               <strong>{studentName || copy.studentNamePlaceholder}</strong>
