@@ -1116,7 +1116,7 @@ function SectionPage({ type, locale, lessonProgress, exerciseProgress }) {
         <div className="school-section-inner">
           <div className="school-heading">
             <p className="eyebrow">{getPageTypeLabel(type, copy)}</p>
-            <h2>{heading}</h2>
+            <h1>{heading}</h1>
             <p>{intro}</p>
             {note ? <p className="section-note">{note}</p> : null}
           </div>

@@ -183,7 +183,7 @@
 .report-release-gates { background: #fff8ef; }
 .report-release-gates h2 { margin-bottom: 20px; }
 .report-release-gates > p:not(.section-label) { display: flex; gap: 10px; margin: 8px 0; color: var(--ink-soft); }
-.report-release-gates > p span { width: 38px; flex-shrink: 0; color: #a5601c; font-size: 9px; font-weight: 900; }
+.report-release-gates > p span { width: 54px; flex-shrink: 0; color: #a5601c; font-size: 9px; font-weight: 900; white-space: nowrap; }
 .report-document footer { display: flex; justify-content: space-between; gap: 24px; padding: 24px 64px; background: var(--dark); color: white; }
 .report-document footer span { max-width: 580px; color: rgba(255,248,238,.66); font-size: 10px; line-height: 1.5; text-align: right; }
 
@@ -202,7 +202,7 @@
 
 @media print {
   @page { size: A4; margin: 12mm; }
-  .app-sidebar,.top-bar,.report-output-toolbar { display: none !important; }
+  .app-sidebar,.top-bar,.report-output-toolbar,.skip-link { display: none !important; }
   .layout-shell,.main-area,.report-output-page { display: block; max-width: none; padding: 0; margin: 0; background: white; }
   .report-document { overflow: visible; border: 0; box-shadow: none; }
   .report-cover,.report-release-gates,.report-document footer,.report-decision { print-color-adjust: exact; -webkit-print-color-adjust: exact; }

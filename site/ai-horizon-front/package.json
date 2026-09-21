@@ -9,6 +9,7 @@
     "validate:skills": "node scripts/validate-super-skills.mjs",
     "test": "node --test tests/*.test.mjs",
     "check": "npm run validate:skills && npm test && npm run build",
+    "preflight:release": "npm run check && node scripts/release-preflight.mjs",
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy"
   },

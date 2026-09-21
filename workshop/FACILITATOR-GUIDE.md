@@ -10,6 +10,13 @@ npm ci
 npm run check
 ```
 
+Run the full Chromium and PDF release preflight before requesting production approval:
+
+```bash
+cd site/ai-horizon-front
+npm run preflight:release
+```
+
 Do not run `npm run deploy` without Ivan Anguiano's explicit approval.
 
 ## Before the room opens
