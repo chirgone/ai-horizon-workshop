@@ -2,10 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { blueprints, getBlueprint } from './blueprint-content';
 import { connectors, getBlueprintConnectors, getConnector } from './connector-content';
+import { OutputsPage, ReportCreate, ReportDetail, ReportTemplateDetail, WorkspaceReports } from './ReportPages';
+import { getReportTemplateForBlueprint, reportBelongsToKnownBlueprint, reportConfidences, reportHorizons, reportSeverities } from './report-content';
 import { exercises, lessons, resources, shellCopy } from './workshop-content';
 
 const SETTINGS_KEY = 'ai-horizon-school-settings';
 const WORKSPACES_KEY = 'ai-horizon-workshop-v3-workspaces';
+const REPORTS_KEY = 'ai-horizon-workshop-v5-reports';
 const routePrefixes = {
   lesson: 'lessons',
   exercise: 'exercises',
@@ -248,17 +251,6 @@ const portalPages = {
       { label: 'Connector lab', title: 'MCP server workspace', body: 'Prepare the governed tool layer used by Blueprints and corporate test connectors.', path: '/lessons/mcp-servers' },
     ],
   },
-  outputs: {
-    eyebrow: 'Decision-ready evidence',
-    title: 'Outputs',
-    intro: 'Turn connected evidence into concise PDF reports with findings, severity, ownership, and a remediation roadmap.',
-    items: [
-      { label: 'PDF report', title: 'Security posture brief', body: 'Executive summary, prioritized findings, evidence, and recommended controls.' },
-      { label: 'PDF report', title: 'Attack surface review', body: 'Exposure inventory, risk narrative, and a sequenced reduction plan.' },
-      { label: 'PDF report', title: 'AI governance assessment', body: 'Governance maturity, control gaps, and an adoption-ready action plan.' },
-      { label: 'Workshop exercise', title: 'Build an output', body: 'Practice converting a governed workspace into a finished artifact.', path: '/exercises/generate-report' },
-    ],
-  },
   explore: {
     eyebrow: 'Cloudflare OS catalog',
     title: 'Explore',
@@ -285,6 +277,14 @@ function readJson(key, fallback) {
   }
 }
 
+function readSessionJson(key, fallback) {
+  try {
+    return JSON.parse(sessionStorage.getItem(key)) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function readWorkspaceRecords() {
   const stored = readJson(WORKSPACES_KEY, []);
   if (!Array.isArray(stored)) return [];
@@ -293,6 +293,31 @@ function readWorkspaceRecords() {
     && ['id', 'name', 'owner', 'audience', 'blueprintSlug', 'createdAt'].every((key) => typeof item[key] === 'string' && item[key])
     && getBlueprint(item.blueprintSlug)
     && !Number.isNaN(Date.parse(item.createdAt)));
+}
+
+function readReportRecords() {
+  const stored = readSessionJson(REPORTS_KEY, []);
+  if (!Array.isArray(stored)) return [];
+  const workspaces = readWorkspaceRecords();
+  const findingFields = ['id', 'title', 'rationale', 'source', 'retrievedAt', 'affectedScope', 'observedFact', 'action', 'owner'];
+
+  return stored.filter((item) => {
+    if (!item || !reportBelongsToKnownBlueprint(item)) return false;
+    const workspace = workspaces.find((record) => record.id === item.workspaceId);
+    const template = getReportTemplateForBlueprint(item.blueprintSlug);
+    if (!workspace || workspace.blueprintSlug !== item.blueprintSlug || !template) return false;
+    if (typeof item.id !== 'string' || !item.id || typeof item.title !== 'string' || !item.title || item.title.length > 120) return false;
+    if (typeof item.assumptions !== 'string' || !item.assumptions || item.assumptions.length > 800 || Number.isNaN(Date.parse(item.createdAt))) return false;
+    if (!item.sections || Object.keys(item.sections).length !== template.sections.length) return false;
+    if (!template.sections.every((section) => typeof item.sections[section] === 'string' && item.sections[section] && item.sections[section].length <= 1600)) return false;
+    if (!Array.isArray(item.findings) || item.findings.length < 1 || item.findings.length > 5) return false;
+    return item.findings.every((finding) => finding
+      && findingFields.every((key) => typeof finding[key] === 'string' && finding[key] && finding[key].length <= 800)
+      && reportSeverities.includes(finding.severity)
+      && reportHorizons.includes(finding.horizon)
+      && reportConfidences.includes(finding.confidence)
+      && !Number.isNaN(Date.parse(finding.retrievedAt)));
+  });
 }
 
 function escapeRegExp(value) {
@@ -376,6 +401,7 @@ export default function App() {
   const [lessonProgress, setLessonProgress] = useState(() => readJson(keyFor('lessons', saved.audience || 'customer'), []));
   const [exerciseProgress, setExerciseProgress] = useState(() => readJson(keyFor('exercises', saved.audience || 'customer'), []));
   const [workspaces, setWorkspaces] = useState(readWorkspaceRecords);
+  const [reports, setReports] = useState(readReportRecords);
   const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
@@ -388,12 +414,15 @@ export default function App() {
   }, [audience]);
 
   useEffect(() => {
-    function syncWorkspaces(event) {
-      if (event.key === WORKSPACES_KEY) setWorkspaces(readWorkspaceRecords());
+    function syncLocalRecords(event) {
+      if (event.key === WORKSPACES_KEY) {
+        setWorkspaces(readWorkspaceRecords());
+        setReports(readReportRecords());
+      }
     }
 
-    window.addEventListener('storage', syncWorkspaces);
-    return () => window.removeEventListener('storage', syncWorkspaces);
+    window.addEventListener('storage', syncLocalRecords);
+    return () => window.removeEventListener('storage', syncLocalRecords);
   }, []);
 
   const totalRequired = lessons.length + exercises.length;
@@ -420,6 +449,7 @@ export default function App() {
       setExerciseProgress([]);
     },
     workspaces,
+    reports,
     createWorkspace: (workspace) => {
       const latest = readWorkspaceRecords();
       const next = [workspace, ...latest.filter((item) => item.id !== workspace.id)];
@@ -430,6 +460,26 @@ export default function App() {
       } catch {
         return false;
       }
+    },
+    createReport: (report) => {
+      const latest = readReportRecords();
+      const next = [report, ...latest.filter((item) => item.id !== report.id)];
+      try {
+        sessionStorage.setItem(REPORTS_KEY, JSON.stringify(next));
+        setReports(next);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    deleteReport: (reportId) => {
+      const next = readReportRecords().filter((report) => report.id !== reportId);
+      sessionStorage.setItem(REPORTS_KEY, JSON.stringify(next));
+      setReports(next);
+    },
+    clearReports: () => {
+      sessionStorage.removeItem(REPORTS_KEY);
+      setReports([]);
     },
   };
 
@@ -450,8 +500,11 @@ export default function App() {
           <Route path="/connectors" element={<ConnectorCatalog />} />
           <Route path="/connectors/:slug" element={<ConnectorDetail />} />
           <Route path="/workspaces/new" element={<WorkspaceCreate createWorkspace={context.createWorkspace} />} />
-          <Route path="/workspaces/:workspaceId" element={<WorkspaceDetail workspaces={workspaces} />} />
-          <Route path="/outputs" element={<HubPage page={portalPages.outputs} />} />
+          <Route path="/workspaces/:workspaceId" element={<WorkspaceDetail workspaces={workspaces} reports={reports} />} />
+          <Route path="/outputs" element={<OutputsPage reports={reports} workspaces={workspaces} deleteReport={context.deleteReport} clearReports={context.clearReports} />} />
+          <Route path="/outputs/new" element={<ReportCreate workspaces={workspaces} createReport={context.createReport} />} />
+          <Route path="/outputs/templates/:slug" element={<ReportTemplateDetail workspaces={workspaces} />} />
+          <Route path="/outputs/:reportId" element={<ReportDetail reports={reports} workspaces={workspaces} deleteReport={context.deleteReport} />} />
           <Route path="/explore" element={<HubPage page={portalPages.explore} />} />
           <Route path="/lessons" element={<SectionPage type="lesson" {...context} />} />
           <Route path="/exercises" element={<SectionPage type="exercise" {...context} />} />
@@ -786,7 +839,7 @@ function WorkspaceCreate({ createWorkspace }) {
   );
 }
 
-function WorkspaceDetail({ workspaces }) {
+function WorkspaceDetail({ workspaces, reports }) {
   const { workspaceId } = useParams();
   const workspace = workspaces.find((item) => item.id === workspaceId);
   const blueprint = workspace ? getBlueprint(workspace.blueprintSlug) : null;
@@ -800,6 +853,7 @@ function WorkspaceDetail({ workspaces }) {
         <div className="workspace-record-main"><p className="section-label">Preparation sequence</p><ol><li className="complete">Blueprint selected: {blueprint.title}</li><li className="complete">Owner assigned: {workspace.owner}</li><li className="complete">Audience defined: {workspace.audience}</li><li>Confirm account and data scope</li><li>Authorize minimum read-only MCP connections</li><li>Run one harmless retrieval per source</li></ol><div className="workspace-record-actions"><Link className="button primary" to="/lessons/workshop-setup">Define scope and connections →</Link><Link className="text-button" to={blueprint.nextPath}>Preview Blueprint run</Link><Link className="text-button" to={`/blueprints/${blueprint.slug}`}>Review Blueprint</Link></div></div>
         <aside className="workspace-record-aside"><p className="section-label">Operating boundary</p>{blueprint.guardrails.map((item) => <p key={item}>{item}</p>)}<Link to="/lessons/mcp-servers">Review connection guidance →</Link><ConnectorLinksSection blueprint={blueprint} compact /></aside>
       </section>
+      <WorkspaceReports workspace={workspace} reports={reports} />
     </main>
   );
 }
