@@ -1,0 +1,29 @@
+site/ai-horizon-front/package-lock.json
+  s_5cef3b059639fa::t_76640cf6e938eb 1-3224
+site/ai-horizon-front/package.json
+  s_12965de0f0c1e3::t_3927e33d81041d 1-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c4073ca98c0972613aad962787ecf5fb43ab9e97",
+  "prompts": {},
+  "sessions": {
+    "s_12965de0f0c1e3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fff575c49ffeXoDTdySuk4IIG6",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "unknown"
+    },
+    "s_5cef3b059639fa": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fff5b5075ffeBXYx5Gtf7eaiKD",
+        "model": "@cf/moonshotai/kimi-k2.6"
+      },
+      "human_author": "unknown"
+    }
+  }
+}
