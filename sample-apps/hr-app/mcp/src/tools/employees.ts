@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { Department, Employee, PaginatedResult, TimeOffBalance } from "@hr-app/shared";
+import type { Department, Employee, PaginatedResult } from "@hr-app/shared";
 import type { Env, McpProps } from "../env.js";
 import { apiFetch } from "../client.js";
 
@@ -12,6 +12,14 @@ const MAX_TOOL_PAGE_SIZE = 25;
 
 function textResult(value: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }] };
+}
+
+function directoryEmployee({ home_address: _homeAddress, ...employee }: Employee) {
+  return employee;
+}
+
+function cappedCollection<T>(data: T[]) {
+  return { data: data.slice(0, MAX_TOOL_PAGE_SIZE), truncated: data.length > MAX_TOOL_PAGE_SIZE, limit: MAX_TOOL_PAGE_SIZE };
 }
 
 export function registerEmployeeTools(server: McpServer, env: Env, props: McpProps) {
@@ -36,7 +44,7 @@ export function registerEmployeeTools(server: McpServer, env: Env, props: McpPro
       params.set("pageSize", String(MAX_TOOL_PAGE_SIZE));
 
       const result = await call<PaginatedResult<Employee>>(`/api/v1/employees?${params.toString()}`);
-      return textResult(result);
+      return textResult({ ...result, data: result.data.map(directoryEmployee) });
     }
   );
 
@@ -48,7 +56,7 @@ export function registerEmployeeTools(server: McpServer, env: Env, props: McpPro
     },
     async ({ employee_id }) => {
       const employee = await call<Employee>(`/api/v1/employees/${employee_id}`);
-      return textResult(employee);
+      return textResult(directoryEmployee(employee));
     }
   );
 
@@ -64,9 +72,11 @@ export function registerEmployeeTools(server: McpServer, env: Env, props: McpPro
       const manager = employee.manager_id ? await call<Employee>(`/api/v1/employees/${employee.manager_id}`) : null;
 
       return textResult({
-        employee,
-        manager,
-        direct_reports: reportsResult.data.slice(0, MAX_TOOL_PAGE_SIZE),
+        employee: directoryEmployee(employee),
+        manager: manager ? directoryEmployee(manager) : null,
+        direct_reports: reportsResult.data.slice(0, MAX_TOOL_PAGE_SIZE).map(directoryEmployee),
+        direct_reports_truncated: reportsResult.data.length > MAX_TOOL_PAGE_SIZE,
+        direct_reports_limit: MAX_TOOL_PAGE_SIZE,
       });
     }
   );
@@ -79,21 +89,7 @@ export function registerEmployeeTools(server: McpServer, env: Env, props: McpPro
     },
     async () => {
       const result = await call<{ data: Department[] }>("/api/v1/departments");
-      return textResult(result.data);
-    }
-  );
-
-  server.registerTool(
-    "get_time_off_balance",
-    {
-      description: "Get an employee's current vacation/sick time-off balance.",
-      inputSchema: { employee_id: z.number().int() },
-    },
-    async ({ employee_id }) => {
-      const result = await call<{ balance: TimeOffBalance | null }>(
-        `/api/v1/employees/${employee_id}/time-off`
-      );
-      return textResult(result.balance);
+      return textResult(cappedCollection(result.data));
     }
   );
 

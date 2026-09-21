@@ -34,7 +34,10 @@ employees.get("/", async (c) => {
   const batchResults = await c.env.DB.batch([
     c.env.DB.prepare(`SELECT COUNT(*) as total FROM employees ${whereClause}`).bind(...params),
     c.env.DB.prepare(
-      `SELECT * FROM employees ${whereClause} ORDER BY last_name, first_name LIMIT ? OFFSET ?`
+      `SELECT id, employee_number, first_name, last_name, email, job_title, department_id,
+              manager_id, hire_date, employment_status, employment_type, location, photo_url,
+              NULL AS home_address, is_system_account
+       FROM employees ${whereClause} ORDER BY last_name, first_name LIMIT ? OFFSET ?`
     ).bind(...params, size, offset),
   ]);
   const countResult = batchResults[0]!;
@@ -69,7 +72,10 @@ employees.get("/:id", async (c) => {
 employees.get("/:id/reports", async (c) => {
   const id = Number(c.req.param("id"));
   const { results } = await c.env.DB.prepare(
-    "SELECT * FROM employees WHERE manager_id = ? AND is_system_account = 0 ORDER BY last_name, first_name"
+    `SELECT id, employee_number, first_name, last_name, email, job_title, department_id,
+            manager_id, hire_date, employment_status, employment_type, location, photo_url,
+            NULL AS home_address, is_system_account
+     FROM employees WHERE manager_id = ? AND is_system_account = 0 ORDER BY last_name, first_name`
   )
     .bind(id)
     .all();
@@ -93,6 +99,10 @@ employees.get("/:id/compensation", async (c) => {
 
 employees.get("/:id/time-off", async (c) => {
   const id = Number(c.req.param("id"));
+  const requesterId = c.get("employeeId");
+  if (!requesterId || !(await canViewSensitiveEmployeeData(c.env.DB, requesterId, id))) {
+    return c.json({ error: "You can only view time-off data for yourself or your reports" }, 403);
+  }
   const timeOffResults = await c.env.DB.batch([
     c.env.DB.prepare("SELECT * FROM time_off_balances WHERE employee_id = ?").bind(id),
     c.env.DB.prepare(

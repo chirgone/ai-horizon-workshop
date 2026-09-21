@@ -13,6 +13,10 @@ function textResult(value: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }] };
 }
 
+function cappedCollection<T>(data: T[]) {
+  return { data: data.slice(0, MAX_TOOL_PAGE_SIZE), truncated: data.length > MAX_TOOL_PAGE_SIZE, limit: MAX_TOOL_PAGE_SIZE };
+}
+
 export function registerRelayTools(server: McpServer, env: Env, props: McpProps) {
   const call = <T>(path: string, init?: RequestInit) => apiFetch<T>(env, props.apiToken, path, init);
 
@@ -45,21 +49,6 @@ export function registerRelayTools(server: McpServer, env: Env, props: McpProps)
       inputSchema: { email_id: z.number().int() },
     },
     async ({ email_id }) => textResult(await call<Email>(`/api/v1/emails/${email_id}`))
-  );
-
-  server.registerTool(
-    "mark_email_read",
-    {
-      description: "Mark an email in your own mailbox as read or unread.",
-      inputSchema: { email_id: z.number().int(), is_read: z.boolean() },
-    },
-    async ({ email_id, is_read }) =>
-      textResult(
-        await call<Email>(`/api/v1/emails/${email_id}/read`, {
-          method: "PATCH",
-          body: JSON.stringify({ is_read }),
-        })
-      )
   );
 
   server.registerTool(
@@ -103,26 +92,8 @@ export function registerRelayTools(server: McpServer, env: Env, props: McpProps)
     },
     async ({ meeting_id }) => {
       const result = await call<{ data: unknown[] }>(`/api/v1/calendar/${meeting_id}/attendees`);
-      return textResult(result.data);
+      return textResult(cappedCollection(result.data));
     }
-  );
-
-  server.registerTool(
-    "respond_to_meeting",
-    {
-      description: "Set your own RSVP status for a meeting you're invited to.",
-      inputSchema: {
-        meeting_id: z.number().int(),
-        response_status: z.enum(["accepted", "tentative", "declined", "needs_action"]),
-      },
-    },
-    async ({ meeting_id, response_status }) =>
-      textResult(
-        await call(`/api/v1/calendar/${meeting_id}/response`, {
-          method: "PATCH",
-          body: JSON.stringify({ response_status }),
-        })
-      )
   );
 
   server.registerTool(
@@ -133,7 +104,7 @@ export function registerRelayTools(server: McpServer, env: Env, props: McpProps)
     },
     async () => {
       const result = await call<{ data: User[] }>("/api/v1/users");
-      return textResult(result.data);
+      return textResult(cappedCollection(result.data));
     }
   );
 

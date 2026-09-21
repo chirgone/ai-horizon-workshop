@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { blueprints, getBlueprint } from './blueprint-content';
+import { connectors, getBlueprintConnectors, getConnector } from './connector-content';
 import { exercises, lessons, resources, shellCopy } from './workshop-content';
 
 const SETTINGS_KEY = 'ai-horizon-school-settings';
@@ -265,6 +266,7 @@ const portalPages = {
     items: [
       { label: 'Foundation', title: 'Installation', body: 'Deploy the workspace used throughout the workshop.', path: '/lessons/installation' },
       { label: 'Connection', title: 'MCP Servers', body: 'Understand the governed connection layer for live tools and enterprise data.', path: '/lessons/mcp-servers' },
+      { label: 'Test systems', title: 'Corporate Test Connectors', body: 'Inspect the workshop-safe CRM, HR, collaboration, wiki, and identity contracts.', path: '/connectors' },
       { label: 'Reusable capability', title: 'Super Skills', body: 'Package repeated analysis and report workflows as reusable capabilities.', path: '/lessons/super-skills' },
       { label: 'Documentation', title: 'Cloudflare Docs MCP', body: 'Review the official catalog, then connect the read-only endpoint at docs.mcp.cloudflare.com/mcp.', href: 'https://developers.cloudflare.com/agents/model-context-protocol/cloudflare/servers-for-cloudflare/' },
     ],
@@ -445,6 +447,8 @@ export default function App() {
           <Route path="/workspaces" element={<HubPage page={portalPages.workspaces}><WorkspaceLibrary workspaces={workspaces} /></HubPage>} />
           <Route path="/blueprints" element={<BlueprintCatalog />} />
           <Route path="/blueprints/:slug" element={<BlueprintDetail />} />
+          <Route path="/connectors" element={<ConnectorCatalog />} />
+          <Route path="/connectors/:slug" element={<ConnectorDetail />} />
           <Route path="/workspaces/new" element={<WorkspaceCreate createWorkspace={context.createWorkspace} />} />
           <Route path="/workspaces/:workspaceId" element={<WorkspaceDetail workspaces={workspaces} />} />
           <Route path="/outputs" element={<HubPage page={portalPages.outputs} />} />
@@ -478,6 +482,8 @@ function Sidebar({ navOpen, onNavigate, workspaces }) {
       ? '/blueprints'
       : location.pathname.startsWith('/resources')
         ? '/explore'
+        : location.pathname.startsWith('/connectors')
+          ? '/explore'
         : location.pathname;
 
   return (
@@ -700,7 +706,7 @@ function BlueprintDetail() {
       <aside className="blueprint-detail-aside">
         <Link className="back-link" to="/blueprints">← Blueprint Catalog</Link>
         <p className="blueprint-category">{blueprint.category}</p>
-        <div className="blueprint-detail-meta"><p><strong>Status</strong><span>{blueprint.maturity}</span></p><p><strong>Workshop time</strong><span>{blueprint.duration}</span></p><p><strong>MCP sources</strong><span>{blueprint.connections.length}</span></p></div>
+        <div className="blueprint-detail-meta"><p><strong>Status</strong><span>{blueprint.maturity}</span></p><p><strong>Workshop time</strong><span>{blueprint.duration}</span></p><p><strong>Cloudflare sources</strong><span>{blueprint.connections.length}</span></p><p><strong>Optional test connectors</strong><span>{blueprint.connectorSlugs.length}</span></p></div>
         <Link className="button primary" to={`/workspaces/new?blueprint=${blueprint.slug}`}>Use this Blueprint →</Link>
         <p className="aside-note">Creates a local workshop record. Connections remain read-only and require separate authorization.</p>
       </aside>
@@ -710,6 +716,7 @@ function BlueprintDetail() {
         <section className="decision-panel"><span>Decision this Blueprint supports</span><p>{blueprint.decision}</p></section>
         <BlueprintListSection title="Required inputs" items={blueprint.inputs} />
         <section className="blueprint-section"><p className="section-label">MCP connection plan</p><div className="connection-list">{blueprint.connections.map((connection) => <div className="connection-card" key={connection.name}><div><h3>{connection.name}</h3><p>{connection.purpose}</p></div><span>{connection.access}</span></div>)}</div></section>
+        <ConnectorLinksSection blueprint={blueprint} />
         <BlueprintListSection title="Evidence requirements" items={blueprint.evidence} />
         <section className="blueprint-section report-preview"><div><p className="section-label">PDF outcome</p><h2>{blueprint.outcome}</h2></div><ol>{blueprint.reportSections.map((section) => <li key={section}>{section}</li>)}</ol></section>
         <BlueprintListSection title="Non-negotiable guardrails" items={blueprint.guardrails} guardrails />
@@ -721,6 +728,18 @@ function BlueprintDetail() {
 
 function BlueprintListSection({ title, items, guardrails = false }) {
   return <section className={`blueprint-section ${guardrails ? 'guardrail-panel' : ''}`}><p className="section-label">{title}</p><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul></section>;
+}
+
+function ConnectorLinksSection({ blueprint, compact = false }) {
+  const linkedConnectors = getBlueprintConnectors(blueprint);
+
+  return (
+    <section className={compact ? 'workspace-connectors' : 'blueprint-section'}>
+      <p className="section-label">Optional Corporate Test Connectors</p>
+      {!compact ? <p className="connector-links-intro">Use these only for isolated workshop scenarios. They supplement, and do not replace, the required Cloudflare evidence sources above.</p> : null}
+      <div className="connector-links">{linkedConnectors.map((connector) => <Link to={`/connectors/${connector.slug}`} key={connector.slug}><span>{connector.system}</span><strong>{connector.brand}</strong><small>{blueprint.connectorPurposes?.[connector.slug] || connector.scope}</small></Link>)}</div>
+    </section>
+  );
 }
 
 function WorkspaceCreate({ createWorkspace }) {
@@ -779,9 +798,78 @@ function WorkspaceDetail({ workspaces }) {
       <header className="workspace-record-hero"><div><p className="eyebrow">Workspace record</p><h1>{workspace.name}</h1><p>{blueprint.summary}</p></div><span className="status-pill">{workspace.status}</span></header>
       <section className="workspace-record-grid">
         <div className="workspace-record-main"><p className="section-label">Preparation sequence</p><ol><li className="complete">Blueprint selected: {blueprint.title}</li><li className="complete">Owner assigned: {workspace.owner}</li><li className="complete">Audience defined: {workspace.audience}</li><li>Confirm account and data scope</li><li>Authorize minimum read-only MCP connections</li><li>Run one harmless retrieval per source</li></ol><div className="workspace-record-actions"><Link className="button primary" to="/lessons/workshop-setup">Define scope and connections →</Link><Link className="text-button" to={blueprint.nextPath}>Preview Blueprint run</Link><Link className="text-button" to={`/blueprints/${blueprint.slug}`}>Review Blueprint</Link></div></div>
-        <aside className="workspace-record-aside"><p className="section-label">Operating boundary</p>{blueprint.guardrails.map((item) => <p key={item}>{item}</p>)}<Link to="/lessons/mcp-servers">Review connection guidance →</Link></aside>
+        <aside className="workspace-record-aside"><p className="section-label">Operating boundary</p>{blueprint.guardrails.map((item) => <p key={item}>{item}</p>)}<Link to="/lessons/mcp-servers">Review connection guidance →</Link><ConnectorLinksSection blueprint={blueprint} compact /></aside>
       </section>
     </main>
+  );
+}
+
+function ConnectorCatalog() {
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('All');
+  const categories = ['All', ...new Set(connectors.map((connector) => connector.category))];
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = connectors.filter((connector) => {
+    const matchesCategory = category === 'All' || connector.category === category;
+    const matchesQuery = !normalizedQuery || `${connector.brand} ${connector.system} ${connector.summary} ${connector.evidence.join(' ')}`.toLowerCase().includes(normalizedQuery);
+    return matchesCategory && matchesQuery;
+  });
+
+  return (
+    <main className="connector-page">
+      <section className="connector-hero"><div><p className="eyebrow">Corporate Test Connector Pack</p><h1>Connect evidence, not entire systems.</h1><p>Use identity-bound, least-privilege contracts for CRM, HR, collaboration, wiki, and identity evidence.</p></div><div className="connector-boundary"><span>Default boundary</span><strong>Read-only</strong><p>No request is sent during catalog preflight.</p></div></section>
+      <section className="catalog-controls" aria-label="Connector filters"><label className="catalog-search"><span>Search connectors</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by system or evidence" type="search" /></label><div className="filter-row">{categories.map((item) => <button type="button" aria-pressed={category === item} className={category === item ? 'active' : ''} onClick={() => setCategory(item)} key={item}>{item}</button>)}</div></section>
+      <section className="connector-grid" aria-live="polite">{filtered.map((connector) => <Link className="connector-card" to={`/connectors/${connector.slug}`} key={connector.slug}><div className="connector-card-head"><span>{connector.category}</span><small>{connector.protocol}</small></div><p className="connector-system">{connector.system}</p><h2>{connector.brand}</h2><p>{connector.summary}</p><div className="connector-card-meta"><span>{connector.readOnlyTools.length} safe capabilities</span><span>{connector.scope}</span><strong>Inspect contract →</strong></div></Link>)}{filtered.length === 0 ? <div className="catalog-empty"><h2>No matching connectors</h2><p>Clear the search or select another category.</p></div> : null}</section>
+    </main>
+  );
+}
+
+function ConnectorDetail() {
+  const { slug } = useParams();
+  const connector = getConnector(slug);
+
+  if (!connector) return <Navigate to="/connectors" replace />;
+
+  return (
+    <main className="blueprint-detail connector-detail">
+      <aside className="blueprint-detail-aside"><Link className="back-link" to="/connectors">← Connector Catalog</Link><p className="blueprint-category">{connector.category}</p><div className="blueprint-detail-meta"><p><strong>System</strong><span>{connector.system}</span></p><p><strong>Protocol</strong><span>{connector.protocol}</span></p><p><strong>Scope</strong><span>{connector.scope}</span></p><p><strong>Owner</strong><span>{connector.owner}</span></p></div><p className="aside-note">Contract verified against the sample application source. Authorization remains a separate user action.</p></aside>
+      <article className="blueprint-detail-content"><header className="blueprint-detail-hero connector-detail-hero"><p className="eyebrow">{connector.system} test connector</p><h1>{connector.brand}</h1><p>{connector.summary}</p></header><section className="decision-panel"><span>Evidence boundary</span><p>{connector.evidence.join('. ')}.</p></section><BlueprintListSection title="Read-only evidence" items={connector.evidence} /><ToolContract connector={connector} /><SafePreflight connector={connector} /></article>
+    </main>
+  );
+}
+
+function ToolContract({ connector }) {
+  return (
+    <section className="blueprint-section tool-contract"><div><p className="section-label">Allowed capabilities</p><div className="tool-chip-list">{connector.readOnlyTools.map((tool) => <code key={tool}>{tool}</code>)}</div></div><div className="blocked-contract"><p className="section-label">Excluded from this workshop</p>{connector.blockedTools.length > 0 ? <div className="tool-chip-list blocked">{connector.blockedTools.map((tool) => <code key={tool}>{tool}</code>)}</div> : <p>No write tool is registered by this connector.</p>}</div></section>
+  );
+}
+
+function SafePreflight({ connector }) {
+  const [endpoint, setEndpoint] = useState('');
+  const [result, setResult] = useState(null);
+
+  function handlePreflight(event) {
+    event.preventDefault();
+    const checks = [];
+    try {
+      const url = new URL(endpoint.trim());
+      checks.push({ label: 'HTTPS endpoint', passed: url.protocol === 'https:' });
+      checks.push({ label: 'No embedded credentials', passed: !url.username && !url.password });
+      checks.push({ label: 'Standard HTTPS port', passed: !url.port });
+      checks.push({ label: 'Exact approved workshop origin', passed: connector.allowedOrigins.includes(url.origin.toLowerCase()) });
+      checks.push({ label: `Expected path ${connector.endpointPath}`, passed: url.pathname.replace(/\/$/, '') === connector.endpointPath.replace(/\/$/, '') });
+      checks.push({ label: 'No query parameters or fragments', passed: !url.search && !url.hash });
+    } catch {
+      checks.push({ label: 'Valid absolute URL', passed: false });
+    }
+    checks.push({ label: 'Read-only scope contract', passed: connector.protocol === 'OpenID Connect' || connector.scope.endsWith(':read') });
+    checks.push({ label: `Harmless validation action: ${connector.validationAction}`, passed: true });
+    checks.push({ label: 'Write capabilities excluded', passed: connector.blockedTools.every((tool) => !connector.readOnlyTools.includes(tool)) });
+    setResult({ checks, passed: checks.every((check) => check.passed) });
+  }
+
+  return (
+    <section className="safe-preflight"><div><p className="section-label">Safe connection preflight</p><h2>Check catalog configuration before authorization.</h2><p>This local format check does not contact the endpoint, verify its live identity, start OAuth, or store a credential.</p></div><form onSubmit={handlePreflight}><label>Validation endpoint<input required type="url" value={endpoint} onChange={(event) => { setEndpoint(event.target.value); setResult(null); }} placeholder={`${connector.allowedOrigins[0]}${connector.endpointPath}`} /></label><button className="button primary" type="submit">Check catalog URL</button></form>{result ? <div className={`preflight-result ${result.passed ? 'passed' : 'failed'}`} role="status"><strong>{result.passed ? 'Approved catalog URL format' : 'Configuration needs attention'}</strong>{result.checks.map((check) => <p key={check.label}><span>{check.passed ? 'PASS' : 'FIX'}</span>{check.label}</p>)}{result.passed ? <small>A facilitator must verify the live endpoint before authorization. First authorized action: {connector.validationAction}. Expected: {connector.expectedResult}</small> : null}</div> : null}</section>
   );
 }
 

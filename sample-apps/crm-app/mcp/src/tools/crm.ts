@@ -13,6 +13,10 @@ function textResult(value: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }] };
 }
 
+function cappedCollection<T>(data: T[]) {
+  return { data: data.slice(0, MAX_TOOL_PAGE_SIZE), truncated: data.length > MAX_TOOL_PAGE_SIZE, limit: MAX_TOOL_PAGE_SIZE };
+}
+
 export function registerCrmTools(server: McpServer, env: Env, props: McpProps) {
   const call = <T>(path: string, init?: RequestInit) => apiFetch<T>(env, props.apiToken, path, init);
 
@@ -53,7 +57,7 @@ export function registerCrmTools(server: McpServer, env: Env, props: McpProps) {
     },
     async ({ company_id }) => {
       const result = await call<{ data: Contact[] }>(`/api/v1/companies/${company_id}/contacts`);
-      return textResult(result.data);
+      return textResult(cappedCollection(result.data));
     }
   );
 
@@ -65,7 +69,7 @@ export function registerCrmTools(server: McpServer, env: Env, props: McpProps) {
     },
     async ({ company_id }) => {
       const result = await call<{ data: Deal[] }>(`/api/v1/companies/${company_id}/deals`);
-      return textResult(result.data);
+      return textResult(cappedCollection(result.data));
     }
   );
 
@@ -110,27 +114,8 @@ export function registerCrmTools(server: McpServer, env: Env, props: McpProps) {
     },
     async ({ deal_id }) => {
       const result = await call<{ data: Activity[] }>(`/api/v1/deals/${deal_id}/activities`);
-      return textResult(result.data);
+      return textResult(cappedCollection(result.data));
     }
-  );
-
-  server.registerTool(
-    "log_deal_activity",
-    {
-      description: "Log a new call/email/meeting/note activity against a deal.",
-      inputSchema: {
-        deal_id: z.number().int(),
-        type: z.enum(["call", "email", "meeting", "note"]),
-        notes: z.string(),
-      },
-    },
-    async ({ deal_id, type, notes }) =>
-      textResult(
-        await call<Activity>(`/api/v1/deals/${deal_id}/activities`, {
-          method: "POST",
-          body: JSON.stringify({ type, notes }),
-        })
-      )
   );
 
   server.registerTool(
@@ -141,7 +126,7 @@ export function registerCrmTools(server: McpServer, env: Env, props: McpProps) {
     },
     async () => {
       const result = await call<{ data: Rep[] }>("/api/v1/reps");
-      return textResult(result.data);
+      return textResult(cappedCollection(result.data));
     }
   );
 

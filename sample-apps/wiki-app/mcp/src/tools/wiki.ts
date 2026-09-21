@@ -13,6 +13,10 @@ function textResult(value: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }] };
 }
 
+function cappedCollection<T>(data: T[]) {
+  return { data: data.slice(0, MAX_TOOL_PAGE_SIZE), truncated: data.length > MAX_TOOL_PAGE_SIZE, limit: MAX_TOOL_PAGE_SIZE };
+}
+
 export function registerWikiTools(server: McpServer, env: Env, props: McpProps) {
   const call = <T>(path: string, init?: RequestInit) => apiFetch<T>(env, props.apiToken, path, init);
 
@@ -25,7 +29,7 @@ export function registerWikiTools(server: McpServer, env: Env, props: McpProps) 
     },
     async () => {
       const result = await call<{ data: Space[] }>("/api/v1/spaces");
-      return textResult(result.data);
+      return textResult(cappedCollection(result.data));
     }
   );
 
@@ -46,7 +50,7 @@ export function registerWikiTools(server: McpServer, env: Env, props: McpProps) 
     },
     async ({ space_id }) => {
       const result = await call<{ data: Page[] }>(`/api/v1/spaces/${space_id}/pages`);
-      return textResult(result.data);
+      return textResult(cappedCollection(result.data));
     }
   );
 
@@ -87,47 +91,8 @@ export function registerWikiTools(server: McpServer, env: Env, props: McpProps) 
     },
     async ({ page_id }) => {
       const result = await call<{ data: PageVersion[] }>(`/api/v1/pages/${page_id}/history`);
-      return textResult(result.data);
+      return textResult(cappedCollection(result.data));
     }
-  );
-
-  server.registerTool(
-    "create_page",
-    {
-      description: "Create a new page in a space you have access to.",
-      inputSchema: {
-        space_id: z.number().int(),
-        title: z.string(),
-        body: z.string().optional(),
-        parent_page_id: z.number().int().optional(),
-      },
-    },
-    async ({ space_id, title, body, parent_page_id }) =>
-      textResult(
-        await call<Page>("/api/v1/pages", {
-          method: "POST",
-          body: JSON.stringify({ space_id, title, body, parent_page_id }),
-        })
-      )
-  );
-
-  server.registerTool(
-    "update_page",
-    {
-      description: "Edit an existing page's title and/or body. The previous body is preserved in its version history.",
-      inputSchema: {
-        page_id: z.number().int(),
-        title: z.string().optional(),
-        body: z.string().optional(),
-      },
-    },
-    async ({ page_id, title, body }) =>
-      textResult(
-        await call<Page>(`/api/v1/pages/${page_id}`, {
-          method: "PATCH",
-          body: JSON.stringify({ title, body }),
-        })
-      )
   );
 
   server.registerTool(
@@ -138,7 +103,7 @@ export function registerWikiTools(server: McpServer, env: Env, props: McpProps) 
     },
     async () => {
       const result = await call<{ data: User[] }>("/api/v1/users");
-      return textResult(result.data);
+      return textResult(cappedCollection(result.data));
     }
   );
 

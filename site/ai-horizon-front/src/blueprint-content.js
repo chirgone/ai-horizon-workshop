@@ -27,6 +27,11 @@ export const blueprints = [
     ],
     reportSections: ['Executive decision', 'Scope and methodology', 'Prioritized findings', '30/60/90-day roadmap', 'Evidence appendix'],
     guardrails: ['No configuration writes', 'No material claim without a citation', 'Human review owns final severity and risk acceptance'],
+    connectorSlugs: ['flareid-identity', 'nexus-wiki'],
+    connectorPurposes: {
+      'flareid-identity': 'Test identity and group-claim boundaries.',
+      'nexus-wiki': 'Test policy and control-ownership retrieval.',
+    },
     nextPath: '/exercises/run-account-audit',
   },
   {
@@ -57,6 +62,12 @@ export const blueprints = [
     ],
     reportSections: ['Executive exposure summary', 'Asset and service inventory', 'Risk paths', 'Control coverage', 'Sequenced reduction plan'],
     guardrails: ['Passive and approved discovery only', 'No scanning outside the defined boundary', 'Asset owners validate critical exposure before release'],
+    connectorSlugs: ['pipeline-crm', 'nexus-wiki', 'flareid-identity'],
+    connectorPurposes: {
+      'pipeline-crm': 'Test business criticality and account-owner context.',
+      'nexus-wiki': 'Test architecture and asset-ownership evidence.',
+      'flareid-identity': 'Test identity context for exposed applications.',
+    },
     nextPath: '/lessons/evidence-collection',
   },
   {
@@ -87,6 +98,13 @@ export const blueprints = [
     ],
     reportSections: ['Executive readiness decision', 'Observed AI landscape', 'Governance maturity', 'Control gaps', 'Adoption roadmap'],
     guardrails: ['Do not collect prompt content unless explicitly approved', 'Minimize personal and sensitive data', 'Legal and security owners approve policy conclusions'],
+    connectorSlugs: ['workweek-hr', 'relay-collaboration', 'nexus-wiki', 'flareid-identity'],
+    connectorPurposes: {
+      'workweek-hr': 'Test directory-safe ownership and organization context.',
+      'relay-collaboration': 'Test user-scoped collaboration evidence.',
+      'nexus-wiki': 'Test AI policy and architecture retrieval.',
+      'flareid-identity': 'Test identity and group-based governance boundaries.',
+    },
     nextPath: '/lessons/security-review',
   },
 ];
