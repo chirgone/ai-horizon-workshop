@@ -1,10 +1,16 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import worker from '../src/worker.js';
 
 function environment(response) {
   return { ASSETS: { fetch: async () => response } };
 }
+
+test('Static assets run through Worker security middleware', async () => {
+  const config = JSON.parse(await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
+  assert.equal(config.assets.run_worker_first, true);
+});
 
 test('Worker applies security and no-cache headers to HTML', async () => {
   const source = new Response('<!doctype html>', { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });

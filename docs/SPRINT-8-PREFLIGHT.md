@@ -4,9 +4,13 @@ Date: 2026-09-21
 
 ## Release status
 
-**Deployment is blocked pending explicit approval from Ivan Anguiano.**
+**Production deployment completed successfully.**
 
-The automated Chrome preflight, Firefox UAT, and Cloudflare Access checks passed. Chrome and Firefox are the supported workshop browsers. Safari is advisory and does not block release. No deploy command was executed.
+The automated Chrome preflight, Firefox UAT, Cloudflare Access checks, security headers, primary routes, and synthetic production PDF workflow passed. Chrome and Firefox are the supported workshop browsers. Safari is advisory and does not block release.
+
+- Production URL: `https://ai-horizon.cf1demos.com/`
+- Worker version: `5660a918-9cdf-4618-9613-ad06f6fef19d`
+- Deployed: 2026-09-21
 
 ## Reproducible command
 
@@ -36,7 +40,7 @@ The release gate always runs the required Chrome and Firefox suites. Firefox 156
 - Every tested route exposed the skip link.
 - Mobile navigation moved focus into the drawer, closed with Escape, and restored focus to the toggle.
 - No browser runtime or console errors were recorded.
-- The 16 native release tests, canonical Skill validation, and production build passed before browser UAT.
+- The 17 native release tests, canonical Skill validation, and production build passed before browser UAT.
 
 ## PDF results
 
@@ -59,8 +63,8 @@ The automated page-count check targets Chromium's generated PDF structure. Visua
 - An unauthenticated request to `https://ai-horizon.cf1demos.com/` returned `302` to the Cloudflare Access login flow.
 - The protected-resource challenge was present.
 - An authorized corporate session reached the application with `200`.
-- The current hostname still serves the pre-Sprint-8 application and headers, as expected before deployment.
-- New Worker security headers must be verified again after an approved deploy.
+- The deployed hostname serves the Sprint 8 assets.
+- CSP, Permissions Policy, Referrer Policy, MIME sniffing protection, frame protection, and HTML no-cache headers are present.
 
 ## Browser matrix
 
@@ -77,19 +81,12 @@ The automated page-count check targets Chromium's generated PDF structure. Visua
 - The serialized Installation SHA-256 test remains green.
 - The existing hosted URLs, steps, order, troubleshooting, and behavior remain unchanged.
 
-## Approval gate
+## Production validation
 
-Before deployment approval:
-
-- Run `npm run release:gate` for the required Chrome and Firefox gates.
-- Revalidate Cloudflare Access manually because the local command does not test the external policy.
-- Confirm the three generated PDFs remain acceptable.
-- Obtain Ivan Anguiano's explicit approval to run the deployment command.
-
-After an approved deployment:
-
-- Verify Home, Blueprints, Workspaces, Skills, Outputs, and Installation on the production hostname.
-- Verify Access still challenges an unauthenticated request.
-- Verify CSP, Permissions Policy, Referrer Policy, MIME sniffing, frame protection, and HTML cache-control headers.
-- Run one synthetic report generation and PDF save.
-- If a blocking check fails, stop and roll back before customer use.
+- Ivan Anguiano explicitly approved deployment.
+- Home, Workspaces, Blueprints, Outputs, Explore, and Installation returned `200` through an authenticated Access session.
+- An unauthenticated request still returned `302` to Cloudflare Access.
+- Production served the expected JavaScript and CSS asset hashes.
+- Required security and cache-control headers passed.
+- A synthetic Account Audit report rendered in production and generated an inspected four-page PDF.
+- No live customer systems or evidence were accessed during post-deploy validation.
