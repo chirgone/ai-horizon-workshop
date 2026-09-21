@@ -1,4 +1,4 @@
-import { installationLesson } from './installation';
+import { installationLesson } from './installation.js';
 
 export const shellCopy = {
   en: {
@@ -193,6 +193,32 @@ export const resources = [
     steps: ['Define one decision question.', 'Connect minimum evidence.', 'Run one Blueprint.', 'Review one PDF.', 'Close on owners and next actions.'],
     outputs: ['Shared workshop objective', 'Expected report', 'Definition of done'],
     prompt: 'Summarize this workshop for an executive customer, including the outcome, sequence, controls, and definition of done.',
+  }),
+  guide('hands-on-mcp-lab', 'Hands-On MCP Installation Lab', [...sources.deployment, ...sources.mcp], {
+    summary: 'Deploy the workshop starter in your own Cloudflare account, install its generic MCP Gatekeeper, and connect the public Cloudflare Documentation MCP server.',
+    objective: 'Practice the complete repository-to-workspace MCP path without granting account access or write capability.',
+    prerequisites: [
+      'The reviewed Cloudflare OS workshop starter repository supplied by the facilitator.',
+      { text: 'Cloudflare Documentation MCP endpoint', url: 'https://docs.mcp.cloudflare.com/mcp' },
+      'Node.js 24.19 or newer, pnpm 11.17, Wrangler authentication, and a Cloudflare account with the required Developer Platform products.',
+    ],
+    steps: [
+      'Clone the workshop starter with submodules and install the root and cloudflare-os dependencies.',
+      'Run pnpm exec wrangler login and configure deployment.jsonc with unique Worker names, including the MCP Gatekeeper Worker.',
+      'Use a workers.dev evaluation route or complete the documented Access setup for a custom domain.',
+      'Run pnpm check, review the dry-run output, then run pnpm deploy only in the approved workshop account.',
+      'Open Gatekeepers, select MCP, and enter https://docs.mcp.cloudflare.com/mcp.',
+      'Choose named tools and select only search_cloudflare_documentation and migrate_pages_to_workers_guide.',
+      'Add the connection to a test workspace, run one harmless documentation search, and confirm the result is recorded as an observation.',
+    ],
+    outputs: ['Participant-owned Cloudflare OS instance', 'Private MCP Gatekeeper Worker', 'Two-tool read-only grant', 'Successful documentation observation'],
+    reference: ['The Documentation MCP server requires no Cloudflare account OAuth.', 'Do not select All tools, paste API tokens, or connect the Cloudflare API MCP server in this baseline lab.', 'Delete the evaluation deployment after the workshop if it is no longer required.'],
+    troubleshooting: [
+      { cause: 'The MCP connector is not listed.', fix: 'Confirm the starter deployment included the GATEKEEPER_MCP service bindings in both the router and Workshop Workers.' },
+      { cause: 'Dependency installation fails with a certificate issuer error.', fix: 'Use the organization-approved CA configuration. Never disable TLS verification.' },
+      { cause: 'The MCP connection exposes unexpected tools.', fix: 'Cancel the connection, verify the exact HTTPS endpoint, and reconnect with the two named tools only.' },
+    ],
+    prompt: 'Use the connected Cloudflare Documentation MCP server to explain Cloudflare Workers. Cite the returned documentation and do not call any unselected tool.',
   }),
   guide('mcp-source-catalog', 'MCP Source Catalog', sources.mcp, {
     summary: 'Select Cloudflare managed MCP servers and Corporate Test Connectors by evidence need.',

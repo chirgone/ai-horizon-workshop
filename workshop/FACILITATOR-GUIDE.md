@@ -40,6 +40,18 @@ Do not run `npm run deploy` without Ivan Anguiano's explicit approval.
 5. **15 minutes:** Create the PDF-ready report draft, inspect citations and remediation ownership, then run the quality gate.
 6. **5 minutes:** Print or save the approved workshop artifact, delete the draft, and reset workshop data.
 
+## Optional 15-minute hands-on MCP lab
+
+- Use the workshop starter repository that includes the generic MCP Gatekeeper. Do not use an unreviewed upstream branch.
+- Each participant deploys to their own approved Cloudflare account. Use unique Worker names and a `workers.dev` evaluation route unless a custom domain and Access application were prepared in advance.
+- Run `pnpm check` before `pnpm deploy`. Stop if the dry run reports a missing product, placeholder, or binding.
+- In Cloudflare OS, open **Gatekeepers**, select **MCP**, and enter `https://docs.mcp.cloudflare.com/mcp`.
+- Select **Choose tools** and grant only `search_cloudflare_documentation` and `migrate_pages_to_workers_guide`.
+- Add the connection to a test workspace, run one harmless documentation search, and verify that the result is recorded as an observation.
+- Do not paste an API token, connect `https://mcp.cloudflare.com/mcp`, select **All tools**, or authorize account access during this baseline lab.
+- If dependency installation reports an untrusted certificate issuer, use the organization-approved CA configuration. Never disable TLS verification.
+- Delete evaluation deployments after the workshop when they are no longer required.
+
 ## Blueprint acceptance checks
 
 ### Cloudflare Account Audit Report

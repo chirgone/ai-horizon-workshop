@@ -6,6 +6,7 @@ import { connectors } from '../src/connector-content.js';
 import { installationLesson } from '../src/installation.js';
 import { reportConfidences, reportHorizons, reportSeverities, reportTemplates } from '../src/report-content.js';
 import { skills } from '../src/skill-content.js';
+import { lessons, resources } from '../src/workshop-content.js';
 
 test('Blueprint dependencies resolve in canonical order', () => {
   assert.deepEqual(blueprints.map(({ slug }) => slug), ['account-audit', 'attack-surface-risk', 'ai-governance-readiness']);
@@ -46,4 +47,19 @@ test('Report templates preserve closed schemas and release gates', () => {
 test('Installation content remains byte-for-byte equivalent at the object boundary', () => {
   const digest = createHash('sha256').update(JSON.stringify(installationLesson)).digest('hex');
   assert.equal(digest, 'c54363f2afaee8154c95ecfec49a50f0d39ce11a0b4fbcb10a7c02f5c496691b');
+  assert.equal(lessons[0], installationLesson);
+});
+
+test('Hands-on MCP lab preserves its HTTPS and read-only boundary', () => {
+  const lab = resources.find(({ slug }) => slug === 'hands-on-mcp-lab');
+  assert.ok(lab);
+  assert.deepEqual(
+    lab.content.en.prerequisites.filter((item) => typeof item === 'object').map(({ url }) => new URL(url).protocol),
+    ['https:'],
+  );
+  const content = JSON.stringify(lab.content.en);
+  assert.match(content, /https:\/\/docs\.mcp\.cloudflare\.com\/mcp/);
+  assert.match(content, /search_cloudflare_documentation/);
+  assert.match(content, /migrate_pages_to_workers_guide/);
+  assert.match(content, /Do not select All tools/);
 });

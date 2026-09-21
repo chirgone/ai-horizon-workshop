@@ -11,6 +11,37 @@ This catalog records the workshop-safe contract exposed by the sample applicatio
 - FlareID validation reads public OIDC discovery metadata only.
 - No credentials, tokens, or sample passwords belong in the workshop front-end.
 
+## Cloudflare Documentation MCP lab
+
+- Each participant deploys the reviewed workshop starter to their own Cloudflare account.
+- The starter installs the generic `gatekeeper-mcp` Worker behind private service bindings.
+- Participants connect `https://docs.mcp.cloudflare.com/mcp` without OAuth or an API token.
+- **Choose tools** grants only `search_cloudflare_documentation` and
+  `migrate_pages_to_workers_guide`.
+- One harmless documentation search validates the connection and must be recorded as an observation.
+- **All tools** and `https://mcp.cloudflare.com/mcp` are excluded from the baseline lab.
+
+## Future Cloudflare API account audit
+
+- This integration is not installed by the current workshop starter.
+- A future account-enabled deployment connects only to an administrator-configured Cloudflare MCP Server Portal.
+- The portal enables **Require user auth** and includes
+  `https://mcp.cloudflare.com/mcp?codemode=false` as an approved upstream with a bounded,
+  administrator-owned read-only tool allowlist.
+- Each participant authorizes their own identity through portal OAuth and the upstream Cloudflare
+  grant is restricted to the workshop account with **Read only** permissions.
+- Facilitators use **Choose tools** as an additional least-privilege procedure. The portal allowlist
+  and read-only OAuth grant remain safe even if a participant selects **All tools**.
+- Named-tool scope refuses unselected operations and tools added by the server later.
+- Write annotations cannot enable auto-approval. `readOnlyHint` is still honored, so the portal
+  allowlist and OAuth permissions remain the authoritative write barriers.
+- The connection is owner-only. Shared workshop artifacts must be published as Blueprints so every
+  participant reconnects with their own credentials.
+- No API token is pasted into Cloudflare OS, a prompt, the workshop front-end, or this repository.
+
+Source: [Cloudflare API MCP server](https://developers.cloudflare.com/agents/model-context-protocol/cloudflare/servers-for-cloudflare/).
+Portal controls: [Cloudflare MCP Server Portals](https://developers.cloudflare.com/cloudflare-one/access-controls/ai-controls/mcp-portals/).
+
 ## Connectors
 
 | Connector | Protocol | Allowed contract | Explicitly excluded |
