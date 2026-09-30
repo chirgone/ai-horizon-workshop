@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "archiveFormat": {
+    "extension": ".gadget",
+    "version": 1,
+    "magic": "ec2e2d3a2300e317"
+  },
+  "source": "https://latam-workshops.skillful-jetstream.sxplab.com",
+  "requiredBindings": [
+    "MCP_CLOUDFLARE",
+    "MCP_AUDITLOGS",
+    "MCP_OBSERVABILITY",
+    "MCP_RADAR"
+  ],
+  "blueprints": [
+    {
+      "id": "a660d093a214642093491ec9bb9f5511",
+      "title": "Cloudflare Account Audit Blueprint",
+      "version": 1,
+      "file": "Cloudflare-Account-Audit-Blueprint-v1.gadget",
+      "requiredBindings": ["MCP_CLOUDFLARE", "MCP_AUDITLOGS", "MCP_OBSERVABILITY"],
+      "expectedEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp",
+        "MCP_OBSERVABILITY": "https://observability.mcp.cloudflare.com/mcp"
+      },
+      "publicUrl": "https://latam-workshops.skillful-jetstream.sxplab.com/blueprint/a660d093a214642093491ec9bb9f5511",
+      "sha256": "752f3eb3fa8279adbb6619e2494235ae546174dd88ead9e2b63c311dc5849756",
+      "sizeBytes": 11120,
+      "description": "Read-only Cloudflare account governance assessment covering members, roles, 2FA, audit evidence, Workers inventory, prioritized findings, and a 30/60/90-day remediation roadmap."
+    },
+    {
+      "id": "e0560255a5337e605efbfc0ad0e88131",
+      "title": "Cloudflare Attack Surface Risk Blueprint",
+      "version": 1,
+      "file": "Cloudflare-Attack-Surface-Risk-Blueprint-v1.gadget",
+      "requiredBindings": ["MCP_CLOUDFLARE", "MCP_AUDITLOGS", "MCP_OBSERVABILITY"],
+      "expectedEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp",
+        "MCP_OBSERVABILITY": "https://observability.mcp.cloudflare.com/mcp"
+      },
+      "publicUrl": "https://latam-workshops.skillful-jetstream.sxplab.com/blueprint/e0560255a5337e605efbfc0ad0e88131",
+      "sha256": "338cdc4b3b3ba08c7b4dc6037db93c0bc0e480819279840fa30cd49090422cff",
+      "sizeBytes": 11074,
+      "description": "Read-only Cloudflare external exposure assessment covering zones, DNS, SSL/TLS, WAF, Rulesets, origin exposure, evidence gaps, and a 30/60/90-day remediation roadmap."
+    },
+    {
+      "id": "be0245465a9dda3f08ff91b6920f2a33",
+      "title": "Cloudflare AI Governance Readiness Blueprint",
+      "version": 1,
+      "file": "Cloudflare-AI-Governance-Readiness-Blueprint-v1.gadget",
+      "requiredBindings": ["MCP_CLOUDFLARE", "MCP_AUDITLOGS", "MCP_OBSERVABILITY"],
+      "expectedEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp",
+        "MCP_OBSERVABILITY": "https://observability.mcp.cloudflare.com/mcp"
+      },
+      "publicUrl": "https://latam-workshops.skillful-jetstream.sxplab.com/blueprint/be0245465a9dda3f08ff91b6920f2a33",
+      "sha256": "193c6e88259da4db4eca3bb0b989bd360f350733c1ff4fffb3b1cc7e1b0fc9ac",
+      "sizeBytes": 10984,
+      "description": "Read-only Cloudflare AI governance assessment covering AI Gateway, Workers AI, logging, guardrails, DLP, BYOK, retention, evidence gaps, and a 30/60/90-day roadmap."
+    },
+    {
+      "id": "ffa228495739ffec22cceafc9b80d8fc",
+      "title": "Cloudflare Radar Intelligence Blueprint",
+      "version": 1,
+      "file": "Cloudflare-Radar-Intelligence-Blueprint-v1.gadget",
+      "requiredBindings": ["MCP_RADAR"],
+      "expectedEndpoints": {
+        "MCP_RADAR": "https://radar.mcp.cloudflare.com/mcp"
+      },
+      "publicUrl": "https://latam-workshops.skillful-jetstream.sxplab.com/blueprint/ffa228495739ffec22cceafc9b80d8fc",
+      "sha256": "2999d1121676714a88550855d1550e7063edf925cefab8b8d97966b5ed4f7b84",
+      "sizeBytes": 14575,
+      "description": "Read-only Cloudflare Radar intelligence assessment for domains, IP addresses, ASNs, and countries with evidence classification, geographic comparison, and monitoring roadmap."
+    }
+  ]
+}
