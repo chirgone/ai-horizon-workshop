@@ -2,6 +2,31 @@
 
 These `.gadget` archives are reusable, read-only assessment templates exported from the LATAM workshop instance.
 
+## Catalogs
+
+- Published installable archives are tracked in `manifest.json`.
+- Proposed next-wave report concepts are tracked in `TOP-REPORT-BLUEPRINTS.md`.
+
+## Status at a glance
+
+### Published installable archives
+
+- Cloudflare Account Audit Report
+- Attack Surface and Risk Report
+- AI Governance Readiness Report
+- Cloudflare Radar Intelligence Report
+
+### Planned report Blueprints
+
+- Security Misconfiguration Report
+- WAF and Bot Protection Effectiveness Report
+- Zero Trust Readiness Report
+- AI Gateway Usage and Cost Report
+- Workers Observability and Reliability Report
+- DNS and Internet Performance Report
+- Compliance Evidence Pack
+- Account Utilization and Contracted Products Report
+
 ## Import
 
 1. Open the target workshop instance and select **Blueprints**.
@@ -16,12 +41,12 @@ These `.gadget` archives are reusable, read-only assessment templates exported f
 2. Accept changes only after all blocking checks pass.
 3. Publish the Blueprint with its catalog title and description.
 4. Open the published Blueprint, select **More blueprint actions**, then **Download archive**.
-5. Save the archive as `<Blueprint-Title>-v1.gadget` and record its public Blueprint ID and URL.
+5. Save the archive as `<Blueprint-Title>-v1.gadget` and record its Blueprint ID and repo download URL.
 6. Verify magic bytes, size, and SHA-256 before adding or updating the manifest.
 
 ## Integrity
 
-`manifest.json` records the source Blueprint IDs, public URLs, archive sizes, and SHA-256 checksums. Verify an archive before importing it:
+`manifest.json` records the source Blueprint IDs, repo download URLs, archive sizes, and SHA-256 checksums. Verify an archive before importing it:
 
 ```sh
 shasum -a 256 blueprints/*.gadget
