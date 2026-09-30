@@ -15,6 +15,8 @@ const routePrefixes = {
   resource: 'resources',
 };
 
+const publishedBlueprintRepoUrl = 'https://github.com/chirgone/ai-horizon-workshop/tree/main/blueprints';
+
 const legacyVisibleTextReplacements = {
   en: {
     'Super Seal': 'Cloudflare OS',
@@ -972,7 +974,7 @@ function BlueprintDetail() {
         <Link className="back-link" to="/blueprints">← Blueprint Catalog</Link>
         <p className="blueprint-category">{blueprint.category}</p>
         <div className="blueprint-detail-meta"><p><strong>Status</strong><span>{blueprint.maturity}</span></p><p><strong>Workshop time</strong><span>{blueprint.duration}</span></p><p><strong>Cloudflare sources</strong><span>{blueprint.connections.length}</span></p><p><strong>Optional test connectors</strong><span>{blueprint.connectorSlugs.length}</span></p></div>
-        {blueprint.archive ? <a className="button primary" href={blueprint.archive.publicUrl} target="_blank" rel="noreferrer">Download .gadget package →</a> : null}
+        {blueprint.archive ? <a className="button primary" href={publishedBlueprintRepoUrl} target="_blank" rel="noreferrer">Download .gadget package →</a> : null}
         <p className="aside-note">Use this page to download the package, open Blueprints in Cloudflare OS, upload the .gadget file, reconnect the required MCP sources, and validate one harmless read.</p>
       </aside>
 
@@ -984,7 +986,7 @@ function BlueprintDetail() {
         <BlueprintListSection title="Required inputs" items={blueprint.inputs} />
         <section className="blueprint-section"><p className="section-label">MCP connection plan</p><div className="connection-list">{blueprint.connections.map((connection) => <div className="connection-card" key={connection.binding}><div><h3>{connection.name}</h3><p>{connection.purpose}</p><p><strong>Binding:</strong> <code>{connection.binding}</code></p><p><strong>Endpoint:</strong> <code>{connection.endpoint}</code></p></div><span>{connection.access}</span></div>)}</div></section>
         {blueprint.archive
-          ? <section className="blueprint-section"><p className="section-label">Published Blueprint package</p><div className="decision-panel"><span>Archive</span><p><code>{blueprint.archive.file}</code></p><span>Blueprint ID</span><p><code>{blueprint.archive.id}</code></p><a href={blueprint.archive.publicUrl} target="_blank" rel="noreferrer">Download published Blueprint package →</a></div></section>
+          ? <section className="blueprint-section"><p className="section-label">Published Blueprint package</p><div className="decision-panel"><span>Archive</span><p><code>{blueprint.archive.file}</code></p><span>Blueprint ID</span><p><code>{blueprint.archive.id}</code></p><a href={publishedBlueprintRepoUrl} target="_blank" rel="noreferrer">Download published Blueprint package →</a></div></section>
           : <section className="blueprint-section"><p className="section-label">Published Blueprint package</p><div className="decision-panel"><span>Package status</span><p>Archive not published yet.</p><span>Blueprint ID</span><p>Assigned at publication time.</p></div></section>}
         <ConnectorLinksSection blueprint={blueprint} />
         <SkillLinks blueprint={blueprint} />
