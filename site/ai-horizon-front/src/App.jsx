@@ -6,7 +6,7 @@ import { OutputsPage, ReportCreate, ReportDetail, ReportTemplateDetail, Workspac
 import { getReportTemplateForBlueprint, reportBelongsToKnownBlueprint, reportConfidences, reportHorizons, reportSeverities } from './report-content';
 import { clearReportComposerDraft } from './report-draft-storage';
 import { SkillCatalog, SkillDetail, SkillLinks, SkillWorkflow } from './SkillPages';
-import { exercises, lessons, resources, shellCopy } from './workshop-content';
+import { controlGuides, exercises, lessons, resources, shellCopy, workshopJourney, workshopSequence } from './workshop-content';
 import { getWorkspaceExpiration, isWorkspaceActive, REPORTS_KEY, resetWorkshopStorage, SETTINGS_KEY, withWorkspaceExpiration, WORKSPACES_KEY } from './workshop-storage';
 import { clearAllReportSkillWorkflows, clearReportSkillWorkflow, clearWorkspaceSkillWorkflow } from './workflow-storage';
 const routePrefixes = {
@@ -240,15 +240,26 @@ const primaryNavigation = [
   { label: 'Explore', path: '/explore' },
 ];
 
+const navigationGuide = [
+  { control: 'Home', purpose: 'Returns to the six-stage guided path and your next incomplete step.' },
+  { control: 'Workspaces', purpose: 'Opens Workspace setup guidance and browser-local workshop records.' },
+  { control: 'Blueprints', purpose: 'Opens reusable Blueprint packages, contracts, and practice checkpoints.' },
+  { control: 'Outputs', purpose: 'Opens report templates and session-scoped PDF drafts.' },
+  { control: 'Explore', purpose: 'Opens MCP, Skill, runbook, and advanced reference material.' },
+  { control: 'Look & Feel', purpose: 'Opens the final deployment customization step under Explore.' },
+  { control: 'Favorites', purpose: 'Reserved for Workspace shortcuts. It does not affect workshop progress.' },
+  { control: 'Recent workspaces', purpose: 'Reopens the three most recent browser-local Workspace records.' },
+];
+
 const portalPages = {
   workspaces: {
     eyebrow: 'Cloudflare OS',
     title: 'Workspaces',
     intro: 'Start with a governed workspace, connect only the context it needs, and keep every customer outcome isolated and auditable.',
     items: [
-      { label: 'Start here', title: 'Installation workspace', body: 'Deploy your Cloudflare OS workspace through the existing hosted installation flow.', path: '/lessons/installation' },
-      { label: 'Foundation', title: 'Governed workspace setup', body: 'Define the decision, owners, data boundary, and report outcome before connecting systems.', path: '/lessons/workshop-setup' },
-      { label: 'Connector lab', title: 'MCP server workspace', body: 'Prepare the governed tool layer used by Blueprints and corporate test connectors.', path: '/lessons/mcp-servers' },
+      { label: 'Start here', title: 'Installation workspace', body: 'Deploy your Cloudflare OS workspace through the existing hosted installation flow.', path: '/lessons/installation', action: 'Start Installation' },
+      { label: 'Step 2', title: 'MCP connections', body: 'Create the minimum read-only Gatekeeper connections before granting them to a Workspace.', path: '/lessons/mcp-servers', action: 'Configure MCPs' },
+      { label: 'Step 3', title: 'Governed Workspace', body: 'Define the boundary, grant approved MCPs, and run one harmless activity.', path: '/lessons/workshop-setup', action: 'Create and test Workspace' },
     ],
   },
   explore: {
@@ -256,11 +267,13 @@ const portalPages = {
     title: 'Explore',
     intro: 'Find installation guidance, MCP connections, reusable skills, and the workshop material behind every Blueprint.',
     items: [
-      { label: 'Foundation', title: 'Installation', body: 'Deploy the workspace used throughout the workshop.', path: '/lessons/installation' },
-      { label: 'Connection', title: 'MCP Servers', body: 'Understand the governed connection layer for live tools and enterprise data.', path: '/lessons/mcp-servers' },
-      { label: 'Test systems', title: 'Corporate Test Connectors', body: 'Inspect the workshop-safe CRM, HR, collaboration, wiki, and identity contracts.', path: '/connectors' },
-      { label: 'Reusable capability', title: 'Super Skills', body: 'Inspect reusable evidence, analysis, planning, and quality contracts.', path: '/skills' },
-      { label: 'Documentation', title: 'Cloudflare Docs MCP', body: 'Review the official catalog, then connect the read-only endpoint at docs.mcp.cloudflare.com/mcp.', href: 'https://developers.cloudflare.com/agents/model-context-protocol/cloudflare/servers-for-cloudflare/' },
+      { label: 'Canonical sequence', title: 'Start-to-Finish Workshop Runbook', body: 'Follow every installation, MCP, Workspace, Blueprint, output, customization, integrity, and cleanup step in one validated order.', path: '/resources/start-to-finish-runbook', action: 'Open full runbook' },
+      { label: 'Foundation', title: 'Installation', body: 'Deploy the workspace used throughout the workshop.', path: '/lessons/installation', action: 'Start Installation' },
+      { label: 'Connection', title: 'MCP Servers', body: 'Understand the governed connection layer for live tools and enterprise data.', path: '/lessons/mcp-servers', action: 'Open MCP guide' },
+      { label: 'Test systems', title: 'Corporate Test Connectors', body: 'Inspect the workshop-safe CRM, HR, collaboration, wiki, and identity contracts.', path: '/connectors', action: 'Inspect connector contracts' },
+      { label: 'Reusable capability', title: 'Super Skills', body: 'Inspect reusable evidence, analysis, planning, and quality contracts.', path: '/skills', action: 'Inspect Skill contracts' },
+      { label: 'Final step', title: 'Look & Feel', body: 'Finalize site identity, theme, notices, and deployment-wide agent instructions after the workflow is validated.', path: '/lessons/customize-look-and-feel', action: 'Open customization guide' },
+      { label: 'Documentation', title: 'Cloudflare Docs MCP', body: 'Review the official catalog, then connect the read-only endpoint at docs.mcp.cloudflare.com/mcp.', href: 'https://developers.cloudflare.com/agents/model-context-protocol/cloudflare/servers-for-cloudflare/', action: 'Open official MCP catalog' },
     ],
   },
 };
@@ -316,7 +329,7 @@ function readReportRecords() {
   const stored = readSessionJson(REPORTS_KEY, []);
   if (!Array.isArray(stored)) return [];
   const workspaces = readWorkspaceRecords();
-  const findingFields = ['id', 'title', 'rationale', 'source', 'retrievedAt', 'affectedScope', 'observedFact', 'action', 'owner'];
+  const findingFields = ['id', 'title', 'rationale', 'source', 'tool', 'parameters', 'retrievedAt', 'affectedScope', 'observedFact', 'action', 'owner'];
 
   const active = stored.filter((item) => {
     if (!item || !reportBelongsToKnownBlueprint(item)) return false;
@@ -333,6 +346,7 @@ function readReportRecords() {
       && reportSeverities.includes(finding.severity)
       && reportHorizons.includes(finding.horizon)
       && reportConfidences.includes(finding.confidence)
+      && template.evidenceClassifications.includes(finding.confidence)
       && !Number.isNaN(Date.parse(finding.retrievedAt)));
   });
   if (active.length !== stored.length) {
@@ -396,8 +410,7 @@ function getEntryPath(type, slug) {
 }
 
 function getSectionPath(type) {
-  if (type === 'lesson') return '/workspaces';
-  if (type === 'exercise') return '/blueprints';
+  if (type === 'lesson' || type === 'exercise') return '/';
   return '/explore';
 }
 
@@ -406,13 +419,9 @@ function getEntryTitle(entry, locale) {
 }
 
 function getPageTypeLabel(type, copy) {
-  if (type === 'lesson') return 'Workspace';
-  if (type === 'exercise') return 'Blueprint practice';
+  if (type === 'lesson') return 'Workshop step';
+  if (type === 'exercise') return 'Workshop checkpoint';
   return 'Explore';
-}
-
-function getNextIncomplete(collection, progress) {
-  return collection.find((item) => !progress.includes(item.slug)) || null;
 }
 
 function formatDuration(entry, copy) {
@@ -507,11 +516,12 @@ export default function App() {
     return () => window.removeEventListener('storage', syncLocalRecords);
   }, []);
 
-  const totalRequired = lessons.length + exercises.length;
+  const totalRequired = workshopSequence.length;
   const totalCompleted = lessonProgress.length + exerciseProgress.length;
-  const nextLesson = getNextIncomplete(lessons, lessonProgress);
-  const nextExercise = getNextIncomplete(exercises, exerciseProgress);
-  const nextRecommended = nextLesson ? { ...nextLesson, type: 'lesson' } : nextExercise ? { ...nextExercise, type: 'exercise' } : null;
+  const nextStep = workshopSequence.find((item) => !(item.type === 'lesson' ? lessonProgress : exerciseProgress).includes(item.slug));
+  const nextCollection = nextStep?.type === 'lesson' ? lessons : exercises;
+  const nextEntry = nextStep ? nextCollection.find((item) => item.slug === nextStep.slug) : null;
+  const nextRecommended = nextEntry ? { ...nextEntry, type: nextStep.type, action: nextStep.action } : null;
 
   const context = {
     locale,
@@ -662,10 +672,11 @@ function toggleProgress(storageKey, slug, setter) {
 
 function Sidebar({ navOpen, onNavigate, workspaces }) {
   const location = useLocation();
-  const activePath = location.pathname.startsWith('/lessons')
-    ? '/workspaces'
-    : location.pathname.startsWith('/exercises')
-      ? '/blueprints'
+  const lookAndFeelActive = location.pathname === '/lessons/customize-look-and-feel';
+  const activePath = lookAndFeelActive
+    ? '/explore'
+    : location.pathname.startsWith('/lessons') || location.pathname.startsWith('/exercises')
+      ? '/'
       : location.pathname.startsWith('/resources')
         ? '/explore'
         : location.pathname.startsWith('/connectors')
@@ -686,12 +697,14 @@ function Sidebar({ navOpen, onNavigate, workspaces }) {
         <ul className="sidebar-list primary-navigation">
           {primaryNavigation.map((item) => {
             const active = item.path === '/' ? activePath === '/' : activePath.startsWith(item.path);
+            const current = active && !lookAndFeelActive;
             return (
               <li key={item.path}>
-                <Link aria-current={active ? 'page' : undefined} className={`sidebar-link ${active ? 'active' : ''}`} to={item.path} onClick={onNavigate}>
+                <Link aria-current={current ? 'page' : undefined} className={`sidebar-link ${active ? 'active' : ''}`} to={item.path} onClick={onNavigate}>
                   <span className="nav-glyph" aria-hidden="true">{item.label.slice(0, 1)}</span>
                   <span>{item.label}</span>
                 </Link>
+                {item.path === '/explore' ? <Link aria-current={lookAndFeelActive ? 'page' : undefined} className={`sidebar-sublink ${lookAndFeelActive ? 'active' : ''}`} to="/lessons/customize-look-and-feel" onClick={onNavigate}>Look &amp; Feel</Link> : null}
               </li>
             );
           })}
@@ -708,11 +721,7 @@ function Sidebar({ navOpen, onNavigate, workspaces }) {
           {workspaces.length > 0 ? workspaces.slice(0, 3).map((workspace) => (
             <Link to={`/workspaces/${workspace.id}`} onClick={onNavigate} key={workspace.id}>{workspace.name}</Link>
           )) : (
-            <>
-              <Link to="/lessons/installation" onClick={onNavigate}>Installation workspace</Link>
-              <Link to="/blueprints/account-audit" onClick={onNavigate}>Account audit blueprint</Link>
-              <Link to="/lessons/mcp-servers" onClick={onNavigate}>MCP connector lab</Link>
-            </>
+            <p className="recent-empty">Created Workspace records appear here.</p>
           )}
         </div>
       </div>
@@ -763,7 +772,8 @@ function RouteEffects() {
 
 function Home({ locale, lessonProgress, exerciseProgress, totalCompleted, totalRequired, nextRecommended }) {
   const copy = shellCopy[locale];
-  const startTarget = nextRecommended ? getEntryPath(nextRecommended.type, nextRecommended.slug) : getEntryPath('lesson', lessons[0].slug);
+  const allComplete = totalCompleted >= totalRequired;
+  const startTarget = allComplete ? '/resources/start-to-finish-runbook' : nextRecommended ? getEntryPath(nextRecommended.type, nextRecommended.slug) : getEntryPath('lesson', lessons[0].slug);
 
   return (
     <main>
@@ -778,7 +788,7 @@ function Home({ locale, lessonProgress, exerciseProgress, totalCompleted, totalR
             <p className="hero-copy">{copy.hero}</p>
             <p className="hero-support">{copy.heroSupport}</p>
         <div className="hero-actions">
-          <Link className="button primary" to={startTarget}>{totalCompleted === 0 ? copy.start : copy.resumeWhereYouLeftOff} <span>→</span></Link>
+          <Link className="button primary" to={startTarget}>{allComplete ? 'Review completed workshop' : totalCompleted === 0 ? copy.start : nextRecommended?.action || copy.resumeWhereYouLeftOff} <span>→</span></Link>
           <Link className="button secondary" to="/explore">Explore</Link>
             </div>
           </div>
@@ -786,21 +796,25 @@ function Home({ locale, lessonProgress, exerciseProgress, totalCompleted, totalR
         <p className="landing-hint">{copy.courseProgress}: {totalCompleted}/{totalRequired}. {copy.browseHint}</p>
       </section>
 
+      <WorkshopJourney lessonProgress={lessonProgress} exerciseProgress={exerciseProgress} />
+      <NavigationGuide />
+
       <SectionSummary
         type="lesson"
         locale={locale}
         progress={lessonProgress}
-        heading="Workspaces"
-        intro="Follow the governed path from installation to connected Cloudflare OS operations."
+        heading="Detailed workshop steps"
+        intro="Use these ten lessons in numeric order. Each lesson explains the controls, the action, and the evidence required before continuing."
         collection={lessons}
       />
       <SectionSummary
         type="exercise"
         locale={locale}
         progress={exerciseProgress}
-        heading="Blueprint practice"
-        intro="Practice the reusable actions that turn connected context into consistent outcomes."
+        heading="Validation checkpoints"
+        intro="The main Resume action interleaves these short exercises whenever a stage needs proof."
         collection={exercises}
+        variant="dark"
       />
       <SectionSummary
         type="resource"
@@ -811,6 +825,41 @@ function Home({ locale, lessonProgress, exerciseProgress, totalCompleted, totalR
         collection={resources}
       />
     </main>
+  );
+}
+
+function WorkshopJourney({ lessonProgress, exerciseProgress }) {
+  return (
+    <section className="journey-section" aria-labelledby="journey-heading">
+      <div className="journey-heading">
+        <p className="eyebrow">Start here</p>
+        <h2 id="journey-heading">One path. Six stages. No guessing.</h2>
+        <p>Complete each stage from left to right. The result shown on each card is the evidence you need before moving on.</p>
+      </div>
+      <div className="journey-grid">
+        {workshopJourney.map((stage) => {
+          const done = stage.required.every((item) => (item.type === 'lesson' ? lessonProgress : exerciseProgress).includes(item.slug));
+          return (
+            <article className={`journey-card ${done ? 'done' : ''}`} key={stage.number}>
+              <div className="journey-card-top"><span>{stage.number}</span><strong>{done ? 'Complete' : 'Required'}</strong></div>
+              <h3>{stage.title}</h3>
+              <p>{stage.summary}</p>
+              <div className="journey-result"><span>Stage result</span><strong>{stage.result}</strong></div>
+              <Link className="text-button compact" to={stage.path}>{done ? 'Review stage' : stage.action} →</Link>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function NavigationGuide() {
+  return (
+    <section className="navigation-guide" aria-labelledby="navigation-guide-heading">
+      <div><p className="eyebrow">Navigation key</p><h2 id="navigation-guide-heading">What every navigation item opens</h2><p>These destinations organize the workshop. They do not grant access, run a tool, or approve an output by themselves.</p></div>
+      <dl>{navigationGuide.map((item) => <div key={item.control}><dt>{item.control}</dt><dd>{item.purpose}</dd></div>)}</dl>
+    </section>
   );
 }
 
@@ -829,7 +878,7 @@ function HubPage({ page, children }) {
               <span className="hub-card-label">{item.label}</span>
               <h2>{item.title}</h2>
               <p>{item.body}</p>
-              {item.path || item.href ? <span className="hub-card-action">Open <span aria-hidden="true">→</span></span> : <span className="hub-card-action muted">{item.status || 'Catalog preview'}</span>}
+              {item.path || item.href ? <span className="hub-card-action">{item.action || 'Open details'} <span aria-hidden="true">→</span></span> : <span className="hub-card-action muted">{item.status || 'Catalog preview'}</span>}
             </>
           );
 
@@ -849,8 +898,8 @@ function WorkspaceLibrary({ workspaces }) {
       <div className="workspace-library-heading"><div><p className="eyebrow">Browser-local records</p><h2>Your workshop workspaces</h2></div><Link className="button primary compact" to="/blueprints">Start from a Blueprint →</Link></div>
       {workspaces.length > 0 ? <div className="workspace-library-grid">{workspaces.map((workspace) => {
         const blueprint = getBlueprint(workspace.blueprintSlug);
-         return <Link className="workspace-library-card" to={`/workspaces/${workspace.id}`} key={workspace.id}><span>{workspace.status || 'Charter created'}</span><h3>{workspace.name}</h3><p>{blueprint?.title || 'Blueprint unavailable'}</p><small>{workspace.owner} · Expires {new Date(getWorkspaceExpiration(workspace)).toLocaleString('en-US')}</small></Link>;
-      })}</div> : <div className="workspace-library-empty"><p>No local Blueprint workspaces yet.</p><span>Select a Blueprint to create a governed workshop charter in this browser.</span></div>}
+         return <Link className="workspace-library-card" to={`/workspaces/${workspace.id}`} key={workspace.id}><span>{workspace.status || 'Checklist created'}</span><h3>{workspace.name}</h3><p>{blueprint?.title || 'Blueprint unavailable'}</p><small>{workspace.owner} · Expires {new Date(getWorkspaceExpiration(workspace)).toLocaleString('en-US')}</small></Link>;
+      })}</div> : <div className="workspace-library-empty"><p>No local Blueprint checklists yet.</p><span>Select a Blueprint to save a browser-local setup checklist for owner, audience, and scope.</span></div>}
     </section>
   );
 }
@@ -874,7 +923,7 @@ function BlueprintCatalog() {
           <h1>Blueprint Catalog</h1>
           <p>Choose a governed package of inputs, read-only MCP connections, evidence requirements, and a decision-ready PDF outcome.</p>
         </div>
-        <div className="blueprint-count"><strong>{blueprints.length}</strong><span>workshop-ready Blueprints</span></div>
+        <div className="blueprint-count"><strong>{blueprints.length}</strong><span>Blueprints in catalog</span></div>
       </section>
 
       <section className="catalog-controls" aria-label="Blueprint filters">
@@ -923,23 +972,36 @@ function BlueprintDetail() {
         <Link className="back-link" to="/blueprints">← Blueprint Catalog</Link>
         <p className="blueprint-category">{blueprint.category}</p>
         <div className="blueprint-detail-meta"><p><strong>Status</strong><span>{blueprint.maturity}</span></p><p><strong>Workshop time</strong><span>{blueprint.duration}</span></p><p><strong>Cloudflare sources</strong><span>{blueprint.connections.length}</span></p><p><strong>Optional test connectors</strong><span>{blueprint.connectorSlugs.length}</span></p></div>
-        <Link className="button primary" to={`/workspaces/new?blueprint=${blueprint.slug}`}>Use this Blueprint →</Link>
-        <p className="aside-note">Creates a local workshop record. Connections remain read-only and require separate authorization.</p>
+        {blueprint.archive ? <a className="button primary" href={blueprint.archive.publicUrl} target="_blank" rel="noreferrer">Download .gadget package →</a> : null}
+        <p className="aside-note">Use this page to download the package, open Blueprints in Cloudflare OS, upload the .gadget file, reconnect the required MCP sources, and validate one harmless read.</p>
       </aside>
 
       <article className="blueprint-detail-content">
         <header className="blueprint-detail-hero"><p className="eyebrow">MCP Blueprint</p><h1>{blueprint.title}</h1><p>{blueprint.summary}</p></header>
         <section className="decision-panel"><span>Decision this Blueprint supports</span><p>{blueprint.decision}</p></section>
+        <BlueprintListSection title="Step-by-step installation" items={blueprint.installSteps} />
+        <BlueprintInstallPromptSection prompt={blueprint.installPrompt} />
         <BlueprintListSection title="Required inputs" items={blueprint.inputs} />
-        <section className="blueprint-section"><p className="section-label">MCP connection plan</p><div className="connection-list">{blueprint.connections.map((connection) => <div className="connection-card" key={connection.name}><div><h3>{connection.name}</h3><p>{connection.purpose}</p></div><span>{connection.access}</span></div>)}</div></section>
+        <section className="blueprint-section"><p className="section-label">MCP connection plan</p><div className="connection-list">{blueprint.connections.map((connection) => <div className="connection-card" key={connection.binding}><div><h3>{connection.name}</h3><p>{connection.purpose}</p><p><strong>Binding:</strong> <code>{connection.binding}</code></p><p><strong>Endpoint:</strong> <code>{connection.endpoint}</code></p></div><span>{connection.access}</span></div>)}</div></section>
+        {blueprint.archive
+          ? <section className="blueprint-section"><p className="section-label">Published Blueprint package</p><div className="decision-panel"><span>Archive</span><p><code>{blueprint.archive.file}</code></p><span>Blueprint ID</span><p><code>{blueprint.archive.id}</code></p><a href={blueprint.archive.publicUrl} target="_blank" rel="noreferrer">Download published Blueprint package →</a></div></section>
+          : <section className="blueprint-section"><p className="section-label">Published Blueprint package</p><div className="decision-panel"><span>Package status</span><p>Archive not published yet.</p><span>Blueprint ID</span><p>Assigned at publication time.</p></div></section>}
         <ConnectorLinksSection blueprint={blueprint} />
         <SkillLinks blueprint={blueprint} />
         <BlueprintListSection title="Evidence requirements" items={blueprint.evidence} />
         <section className="blueprint-section report-preview"><div><p className="section-label">PDF outcome</p><h2>{blueprint.outcome}</h2></div><ol>{blueprint.reportSections.map((section) => <li key={section}>{section}</li>)}</ol></section>
         <BlueprintListSection title="Non-negotiable guardrails" items={blueprint.guardrails} guardrails />
-        <div className="blueprint-bottom-action"><p>Ready to prepare the governed workspace?</p><Link className="button primary" to={`/workspaces/new?blueprint=${blueprint.slug}`}>Use this Blueprint →</Link></div>
       </article>
     </main>
+  );
+}
+
+function BlueprintInstallPromptSection({ prompt }) {
+  return (
+    <section className="blueprint-section">
+      <p className="section-label">Copyable install prompt</p>
+      <PromptBox locale="en" prompt={prompt} />
+    </section>
   );
 }
 
@@ -949,6 +1011,8 @@ function BlueprintListSection({ title, items, guardrails = false }) {
 
 function ConnectorLinksSection({ blueprint, compact = false }) {
   const linkedConnectors = getBlueprintConnectors(blueprint);
+
+  if (linkedConnectors.length === 0) return null;
 
   return (
     <section className={compact ? 'workspace-connectors' : 'blueprint-section'}>
@@ -979,7 +1043,7 @@ function WorkspaceCreate({ createWorkspace }) {
       return;
     }
     const id = `${blueprint.slug}-${Date.now()}`;
-    const saved = createWorkspace({ id, name: cleanName, owner: cleanOwner, audience, blueprintSlug: blueprint.slug, createdAt: new Date().toISOString(), status: 'Charter created' });
+    const saved = createWorkspace({ id, name: cleanName, owner: cleanOwner, audience, blueprintSlug: blueprint.slug, createdAt: new Date().toISOString(), status: 'Checklist created' });
     if (!saved) {
       setFormError('This browser could not save the workspace. Check local storage access and try again.');
       return;
@@ -989,15 +1053,15 @@ function WorkspaceCreate({ createWorkspace }) {
 
   return (
     <main className="workspace-create-page">
-      <section className="workspace-create-copy"><Link className="back-link" to={`/blueprints/${blueprint.slug}`}>← {blueprint.title}</Link><p className="eyebrow">Create governed workspace</p><h1>Prepare the boundary before connecting data.</h1><p>This record names the outcome, owner, and audience for 24 hours. Use workshop-safe labels instead of real customer identifiers. It does not authorize MCP access or make account changes.</p><div className="selected-blueprint"><span>Selected Blueprint</span><strong>{blueprint.title}</strong><p>{blueprint.outcome}</p></div></section>
+      <section className="workspace-create-copy"><Link className="back-link" to={`/blueprints/${blueprint.slug}`}>← {blueprint.title}</Link><p className="eyebrow">Optional local checklist</p><h1>Track owner, audience, and scope before connecting data.</h1><p>This is only a browser-local setup checklist. It helps the facilitator remember who owns the run, who the report is for, and what boundary was approved. It does not upload the Blueprint, authorize MCP access, or make account changes.</p><div className="selected-blueprint"><span>Selected Blueprint</span><strong>{blueprint.title}</strong><p>{blueprint.outcome}</p></div></section>
       <form className="workspace-form" onSubmit={handleSubmit}>
-        <div><p className="eyebrow">Workspace charter</p><h2>Define the operating context</h2></div>
-        <label>Workspace name<input required maxLength="80" value={name} onChange={(event) => setName(event.target.value)} /></label>
+        <div><p className="eyebrow">Local setup checklist</p><h2>Name this Blueprint run</h2></div>
+        <label>Checklist name<input required maxLength="80" value={name} onChange={(event) => setName(event.target.value)} /></label>
         <label>Accountable owner<input required maxLength="80" value={owner} onChange={(event) => setOwner(event.target.value)} placeholder="Name or role" /></label>
         <label>Report audience<select value={audience} onChange={(event) => setAudience(event.target.value)}><option>Security leadership</option><option>Executive leadership</option><option>Technical operations</option><option>Governance committee</option></select></label>
         <div className="form-boundary"><strong>Default boundary</strong><span>Read-only MCP access</span><span>Human-reviewed findings</span><span>No account changes</span></div>
         {formError ? <p className="form-error" role="alert">{formError}</p> : null}
-        <button className="button primary" type="submit">Create workshop record →</button>
+        <button className="button primary" type="submit">Save local setup checklist →</button>
       </form>
     </main>
   );
@@ -1127,9 +1191,9 @@ function SectionPage({ type, locale, lessonProgress, exerciseProgress }) {
   );
 }
 
-function SectionSummary({ type, locale, progress, heading, intro, collection, note }) {
+function SectionSummary({ type, locale, progress, heading, intro, collection, note, variant = '' }) {
   return (
-    <section className="school-section">
+    <section className={`school-section ${variant}`}>
       <div className="school-section-inner">
         <div className="school-heading">
           <h2>{heading}</h2>
@@ -1164,7 +1228,7 @@ function SectionRows({ type, locale, progress, collection }) {
             </div>
             <div className="school-row-actions">
               {duration ? <span>{duration}</span> : null}
-              <Link className="text-button compact" to={href}>{done ? copy.completed : copy.viewAll}</Link>
+              <Link className="text-button compact" to={href}>{done ? `Review ${title}` : workshopSequence.find((item) => item.type === type && item.slug === entry.slug)?.action || `Open ${title}`}</Link>
             </div>
           </div>
         );
@@ -1186,12 +1250,18 @@ function EntryPage(props) {
 
   const content = entry.content[locale];
   const completed = progress.includes(slug);
-  const currentIndex = collection.findIndex((item) => item.slug === slug);
-  const previous = collection[currentIndex - 1];
-  const next = collection[currentIndex + 1];
+  const sequencedEntries = workshopSequence.map((item) => {
+    const source = item.type === 'lesson' ? lessons : exercises;
+    return { ...source.find((candidate) => candidate.slug === item.slug), type: item.type, action: item.action, label: item.label };
+  });
+  const navigationEntries = props.type === 'resource' ? collection.map((item) => ({ ...item, type: 'resource' })) : sequencedEntries;
+  const currentIndex = navigationEntries.findIndex((item) => item.type === props.type && item.slug === slug);
+  const previous = navigationEntries[currentIndex - 1];
+  const next = navigationEntries[currentIndex + 1];
   const pageTypeLabel = getPageTypeLabel(props.type, copy);
-  const backLabel = props.type === 'lesson' ? 'Workspaces' : props.type === 'exercise' ? 'Blueprints' : 'Explore';
-  const backPath = getSectionPath(props.type);
+  const customization = props.type === 'lesson' && slug === 'customize-look-and-feel';
+  const backLabel = props.type === 'resource' || customization ? 'Explore' : 'Workshop Home';
+  const backPath = customization ? '/explore' : getSectionPath(props.type);
   const title = getEntryTitle(entry, locale);
   const duration = formatDuration(entry, copy);
 
@@ -1205,8 +1275,8 @@ function EntryPage(props) {
           {props.type !== 'resource' ? <p><strong>{copy.sectionStatus}</strong> {completed ? copy.completed : copy.workshopMode}</p> : null}
         </div>
         <div className="entry-nav-links">
-          {previous ? <Link className="text-button compact" to={getEntryPath(props.type, previous.slug)}>← {getEntryTitle(previous, locale)}</Link> : null}
-          {next ? <Link className="text-button compact" to={getEntryPath(props.type, next.slug)}>{getEntryTitle(next, locale)} →</Link> : null}
+          {previous ? <Link className="text-button compact" to={getEntryPath(previous.type, previous.slug)}>Previous: {previous.label || getEntryTitle(previous, locale)}</Link> : null}
+          {next ? <Link className="text-button compact" to={getEntryPath(next.type, next.slug)}>Next: {next.label || getEntryTitle(next, locale)}</Link> : null}
         </div>
       </aside>
 
@@ -1229,6 +1299,8 @@ function EntryPage(props) {
 
         {'reference' in content ? <ReferenceSection title={copy.reference} items={content.reference} locale={locale} /> : null}
 
+        {controlGuides[entry.slug] ? <ControlGuideSection title={copy.controlsLabel} items={controlGuides[entry.slug]} /> : null}
+
         {'steps' in content ? <section className="content-section"><h2>{copy.steps}</h2><ol>{content.steps.map((step) => <li key={step}>{renderInlineText(step, locale)}</li>)}</ol></section> : null}
 
         {'advancedPath' in content ? <AdvancedPathSection title={copy.advancedLabel} data={content.advancedPath} locale={locale} /> : null}
@@ -1244,14 +1316,32 @@ function EntryPage(props) {
         {'troubleshooting' in content ? <TroubleshootingSection title={copy.troubleshootingLabel} causeLabel={copy.causeLabel} fixLabel={copy.fixLabel} items={content.troubleshooting} locale={locale} /> : null}
 
         <div className="entry-actions">
-          {props.type !== 'resource' ? <button className={`complete-button ${completed ? 'done' : ''}`} onClick={() => toggle(slug)}>{completed ? '✓ ' : ''}{copy.completed}</button> : <span />}
+          {props.type !== 'resource' ? <button className={`complete-button ${completed ? 'done' : ''}`} aria-pressed={completed} onClick={() => toggle(slug)}>{completed ? 'Reopen this step' : 'Complete this step'}</button> : <span />}
           <div className="pager-links">
-            {previous ? <Link className="text-button" to={getEntryPath(props.type, previous.slug)}>← {getEntryTitle(previous, locale)}</Link> : null}
-            {next ? <Link className="button primary compact" to={getEntryPath(props.type, next.slug)}>{getEntryTitle(next, locale)} →</Link> : null}
+            {previous ? <Link className="text-button" to={getEntryPath(previous.type, previous.slug)}>Previous: {previous.label || getEntryTitle(previous, locale)}</Link> : null}
+            {next ? <Link className="button primary compact" to={getEntryPath(next.type, next.slug)}>Next: {next.label || getEntryTitle(next, locale)}</Link> : null}
           </div>
         </div>
       </article>
     </main>
+  );
+}
+
+function ControlGuideSection({ title, items }) {
+  return (
+    <section className="content-section control-guide">
+      <h2>{title}</h2>
+      <p className="control-guide-intro">Read this before clicking. A control is complete only when its expected result appears.</p>
+      <div className="control-guide-list">
+        {items.map((item) => (
+          <article key={item.control}>
+            <h3>{item.control}</h3>
+            <p><strong>Use it to:</strong> {item.purpose}</p>
+            <p><strong>Expected result:</strong> {item.result}</p>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -1283,7 +1373,7 @@ function ReferenceSection({ title, items, locale }) {
       <div className="reference-list">
         {items.map((item) => (
           <div className="reference-card" key={item}>
-            <p>{translateVisibleText(item, locale)}</p>
+            <p>{renderInlineText(item, locale)}</p>
           </div>
         ))}
       </div>

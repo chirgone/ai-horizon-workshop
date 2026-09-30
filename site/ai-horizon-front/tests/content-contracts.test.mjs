@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { blueprints } from '../src/blueprint-content.js';
 import { connectors } from '../src/connector-content.js';
 import { installationLesson } from '../src/installation.js';
 import { reportConfidences, reportHorizons, reportSeverities, reportTemplates } from '../src/report-content.js';
 import { skills } from '../src/skill-content.js';
-import { lessons, resources } from '../src/workshop-content.js';
+import { controlGuides, exercises, lessons, resources, workshopJourney, workshopSequence } from '../src/workshop-content.js';
 
 test('Blueprint dependencies resolve in canonical order', () => {
-  assert.deepEqual(blueprints.map(({ slug }) => slug), ['account-audit', 'attack-surface-risk', 'ai-governance-readiness']);
+  assert.deepEqual(blueprints.map(({ slug }) => slug), ['account-audit', 'attack-surface-risk', 'security-misconfiguration', 'ai-governance-readiness', 'waf-bot-effectiveness', 'zero-trust-readiness', 'ai-gateway-usage-cost', 'workers-observability-reliability', 'dns-internet-performance', 'compliance-evidence-pack', 'account-utilization-contracted-products', 'radar-intelligence']);
   const connectorSlugs = new Set(connectors.map(({ slug }) => slug));
   const skillSlugs = skills.map(({ slug }) => slug);
   assert.deepEqual(skills.map(({ order }) => order), [1, 2, 3, 4, 5]);
@@ -41,7 +42,7 @@ test('Report templates preserve closed schemas and release gates', () => {
   }
   assert.deepEqual(reportSeverities, ['Critical', 'High', 'Medium', 'Low', 'Informational']);
   assert.deepEqual(reportHorizons, ['Immediate', '30 days', '60 days', '90 days', 'Accepted risk']);
-  assert.deepEqual(reportConfidences, ['Verified', 'High', 'Medium', 'Low']);
+  assert.deepEqual(reportConfidences, ['Verified', 'High', 'Medium', 'Low', 'Direct evidence', 'Evidence gap', 'Tool error', 'Not evaluated']);
 });
 
 test('Installation content remains byte-for-byte equivalent at the object boundary', () => {
@@ -50,11 +51,60 @@ test('Installation content remains byte-for-byte equivalent at the object bounda
   assert.equal(lessons[0], installationLesson);
 });
 
+test('Beginner path follows MCP, Workspace, Blueprint, output, and customization order', () => {
+  const expectedSequence = [
+    ['lesson', 'installation'],
+    ['lesson', 'mcp-servers'],
+    ['exercise', 'connect-mcp'],
+    ['lesson', 'workshop-setup'],
+    ['exercise', 'configure-workspace'],
+    ['lesson', 'blueprint-selection'],
+    ['exercise', 'run-account-audit'],
+    ['lesson', 'evidence-collection'],
+    ['lesson', 'report-generation'],
+    ['exercise', 'generate-report'],
+    ['lesson', 'security-review'],
+    ['lesson', 'remediation-roadmap'],
+    ['exercise', 'review-roadmap'],
+    ['lesson', 'super-skills'],
+    ['lesson', 'customize-look-and-feel'],
+  ];
+  assert.deepEqual(lessons.slice(0, 4).map(({ slug }) => slug), ['installation', 'mcp-servers', 'workshop-setup', 'blueprint-selection']);
+  assert.deepEqual(workshopJourney.map(({ number }) => number), ['01', '02', '03', '04', '05', '06']);
+  assert.deepEqual(workshopSequence.map(({ type, slug }) => [type, slug]), expectedSequence);
+  assert.equal(workshopSequence.length, lessons.length + exercises.length);
+  assert.equal(new Set(workshopSequence.map(({ type, slug }) => `${type}:${slug}`)).size, workshopSequence.length);
+  assert.ok(workshopSequence.every(({ action, label }) => action && label));
+  assert.deepEqual(workshopJourney.flatMap(({ required }) => required.map(({ type, slug }) => [type, slug])), expectedSequence);
+});
+
+test('Every detailed lesson explains each control and expected result', () => {
+  assert.equal(controlGuides.installation, undefined);
+  assert.deepEqual(Object.keys(controlGuides), lessons.slice(1).map(({ slug }) => slug));
+  for (const lesson of lessons.slice(1)) {
+    assert.ok(controlGuides[lesson.slug].length >= 3, `${lesson.slug} needs at least three documented controls`);
+    for (const item of controlGuides[lesson.slug]) {
+      assert.ok(item.control && item.purpose && item.result, `${lesson.slug} has an incomplete control guide`);
+    }
+  }
+});
+
+test('Look-and-feel customization closes the course with deployment guardrails', () => {
+  const customization = lessons.at(-1);
+  assert.equal(customization.number, '10');
+  assert.equal(customization.slug, 'customize-look-and-feel');
+  const content = JSON.stringify(customization.content.en);
+  for (const required of ['**Site name**', '**Logo**', '**Theme**', '**Banner**', '**Top-bar notice**', '**Agent instructions**', '**2,000-character limit**', '**8,000-character limit**', '**next connection**']) {
+    assert.match(content, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+  assert.match(content, /never include credentials, tokens, customer secrets/);
+});
+
 test('Hands-on MCP lab preserves its HTTPS and read-only boundary', () => {
   const lab = resources.find(({ slug }) => slug === 'hands-on-mcp-lab');
   assert.ok(lab);
   assert.deepEqual(
-    lab.content.en.prerequisites.filter((item) => typeof item === 'object').map(({ url }) => new URL(url).protocol),
+    lab.content.en.prerequisites.filter(({ url }) => url).map(({ url }) => new URL(url).protocol),
     ['https:'],
   );
   const content = JSON.stringify(lab.content.en);
@@ -62,4 +112,33 @@ test('Hands-on MCP lab preserves its HTTPS and read-only boundary', () => {
   assert.match(content, /search_cloudflare_documentation/);
   assert.match(content, /migrate_pages_to_workers_guide/);
   assert.match(content, /Do not select All tools/);
+  assert.ok(lab.content.en.prerequisites.every((item) => typeof item.text === 'string' && item.text));
+  assert.ok(lab.content.en.troubleshooting.every((item) => item.issue && item.cause && item.fix));
+});
+
+test('Published Blueprint bindings match the archive manifest', async () => {
+  const manifest = JSON.parse(await readFile(new URL('../../../blueprints/manifest.json', import.meta.url), 'utf8'));
+  const publishedBlueprints = blueprints.filter(({ archive }) => archive);
+  assert.equal(manifest.blueprints.length, publishedBlueprints.length);
+  for (const blueprint of publishedBlueprints) {
+    const archive = manifest.blueprints.find(({ id }) => id === blueprint.archive.id);
+    assert.ok(archive, `Missing manifest entry for ${blueprint.slug}`);
+    assert.equal(archive.file, blueprint.archive.file);
+    assert.equal(archive.publicUrl, blueprint.archive.publicUrl);
+    assert.deepEqual(archive.requiredBindings, blueprint.connections.map(({ binding }) => binding));
+    assert.deepEqual(archive.expectedEndpoints, Object.fromEntries(blueprint.connections.map(({ binding, endpoint }) => [binding, endpoint])));
+    const bytes = await readFile(new URL(`../../../blueprints/${archive.file}`, import.meta.url));
+    assert.equal(bytes.length, archive.sizeBytes);
+    assert.equal(bytes.subarray(0, 8).toString('hex'), manifest.archiveFormat.magic);
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), archive.sha256);
+  }
+});
+
+test('Start-to-finish runbook covers the blocking workshop gates', () => {
+  const runbook = resources.find(({ slug }) => slug === 'start-to-finish-runbook');
+  assert.ok(runbook);
+  const content = JSON.stringify(runbook.content.en);
+  for (const required of ['MCP_CLOUDFLARE', 'MCP_AUDITLOGS', 'MCP_OBSERVABILITY', 'MCP_RADAR', 'create_url_scan', 'Draft, review required', 'Download archive', 'SHA-256', 'Reset workshop data']) {
+    assert.match(content, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
 });
