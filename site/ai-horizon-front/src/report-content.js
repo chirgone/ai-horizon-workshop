@@ -155,20 +155,6 @@ const templateDetails = {
     ],
     evidenceClassifications: standardEvidenceClassifications,
   },
-  'account-utilization-contracted-products': {
-    label: 'Account utilization assessment',
-    accent: 'Account strategy',
-    methodology: 'Observed product usage, operational coverage, approved entitlement evidence, and owner follow-up for adoption gaps.',
-    findingsSection: 'Inactive or underused capabilities',
-    sectionPrompts: [
-      'State the utilization decision and the highest-value ownership or adoption gap.',
-      'Define the approved account scope, product inventory source, and observation window.',
-      'Summarize observed adoption and usage by product with cited evidence.',
-      'Assess inactive, underused, or unowned capabilities without overstating commercial conclusions.',
-      'Sequence the owner follow-up actions and next review date.',
-    ],
-    evidenceClassifications: standardEvidenceClassifications,
-  },
   'radar-intelligence': {
     label: 'Cloudflare Radar Intelligence Report',
     accent: 'Internet intelligence',

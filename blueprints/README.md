@@ -25,7 +25,6 @@ These `.gadget` archives are reusable, read-only assessment templates exported f
 - Workers Observability and Reliability Report
 - DNS and Internet Performance Report
 - Compliance Evidence Pack
-- Account Utilization and Contracted Products Report
 
 ## Import
 

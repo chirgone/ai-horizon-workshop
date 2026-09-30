@@ -18,7 +18,6 @@ This list is intentionally separate from `manifest.json` and the installable `.g
 | 8 | Workers Observability and Reliability Report | Review Workers health, errors, builds, logs, and performance. | Observability, Workers Builds, GraphQL | Error-prone services, failed deployments, latency, relevant logs, and corrective actions. |
 | 9 | DNS and Internet Performance Report | Evaluate DNS health, latency, errors, configuration quality, and global performance. | DNS Analytics, Radar, GraphQL | DNS issues, critical zones, regional performance, and recommendations. |
 | 10 | Compliance Evidence Pack | Generate reusable evidence for internal or regulatory audit. | Audit Logs, Cloudflare API, CASB, GraphQL | Configured controls, recent changes, administrative access, exceptions, and exportable evidence. |
-| 11 | Account Utilization and Contracted Products Report | Compare contracted products against observed account adoption, utilization, and operational coverage. | Cloudflare API, GraphQL, Audit Logs, Radar | Contracted-product inventory, adoption by product, utilization signals, unused entitlements, expansion candidates, and owner follow-up actions. |
 
 ## Recommended Sequencing
 
@@ -32,7 +31,7 @@ This list is intentionally separate from `manifest.json` and the installable `.g
 1. Security Misconfiguration Report
 2. WAF and Bot Protection Effectiveness Report
 3. Zero Trust Readiness Report
-4. Account Utilization and Contracted Products Report
+4. AI Gateway Usage and Cost Report
 
 ## Design Notes
 
@@ -40,4 +39,4 @@ This list is intentionally separate from `manifest.json` and the installable `.g
 - Keep every report read-only by default.
 - Separate direct evidence from inferred conclusions.
 - Make ownership and remediation horizon explicit in every output.
-- Treat account utilization as a distinct operator conversation, not just a security appendix.
+- Keep non-Top-10 add-ons, such as Radar intelligence, clearly labeled when they remain in the catalog.

@@ -10,7 +10,7 @@ import { skills } from '../src/skill-content.js';
 import { controlGuides, exercises, lessons, resources, workshopJourney, workshopSequence } from '../src/workshop-content.js';
 
 test('Blueprint dependencies resolve in canonical order', () => {
-  assert.deepEqual(blueprints.map(({ slug }) => slug), ['account-audit', 'attack-surface-risk', 'security-misconfiguration', 'ai-governance-readiness', 'waf-bot-effectiveness', 'zero-trust-readiness', 'ai-gateway-usage-cost', 'workers-observability-reliability', 'dns-internet-performance', 'compliance-evidence-pack', 'account-utilization-contracted-products', 'radar-intelligence']);
+  assert.deepEqual(blueprints.map(({ slug }) => slug), ['account-audit', 'attack-surface-risk', 'security-misconfiguration', 'ai-governance-readiness', 'waf-bot-effectiveness', 'zero-trust-readiness', 'ai-gateway-usage-cost', 'workers-observability-reliability', 'dns-internet-performance', 'compliance-evidence-pack', 'radar-intelligence']);
   const connectorSlugs = new Set(connectors.map(({ slug }) => slug));
   const skillSlugs = skills.map(({ slug }) => slug);
   assert.deepEqual(skills.map(({ order }) => order), [1, 2, 3, 4, 5]);

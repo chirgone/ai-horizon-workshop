@@ -52,7 +52,6 @@ Canonical workspace for the customer-facing Cloudflare OS workshop. The workshop
 - Workers Observability and Reliability Report
 - DNS and Internet Performance Report
 - Compliance Evidence Pack
-- Account Utilization and Contracted Products Report
 
 See `blueprints/TOP-REPORT-BLUEPRINTS.md` for the full planning catalog, MCP suggestions, and expected outputs.
 
