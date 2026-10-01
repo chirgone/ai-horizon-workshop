@@ -4,7 +4,17 @@ const coreAccountConnections = [
   { name: 'Workers Observability MCP', binding: 'MCP_OBSERVABILITY', endpoint: 'https://observability.mcp.cloudflare.com/mcp', purpose: 'Worker inventory, code, logs, and metrics', access: 'Required, read-only and approval-gated queries' },
 ];
 
+import templateIndex from '../../../blueprints/templates/index.json' with { type: 'json' };
+
 const blueprintArchiveUrl = (file) => `https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/${file}`;
+export const blueprintTemplateUrl = (slug) => `https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/${slug}.md`;
+export const blueprintTemplateRawUrl = (slug) => `https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/${slug}.md`;
+
+const templateBySlug = Object.fromEntries(templateIndex.templates.map((template) => [template.slug, template]));
+
+export function getBlueprintTemplate(slug) {
+  return templateBySlug[slug] || null;
+}
 const planningConnection = (name, binding, purpose) => ({
   name,
   binding,

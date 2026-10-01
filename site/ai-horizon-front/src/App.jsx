@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { blueprints, getBlueprint } from './blueprint-content';
+import { blueprints, getBlueprint, getBlueprintTemplate, blueprintTemplateUrl } from './blueprint-content';
 import { connectors, getBlueprintConnectors, getConnector } from './connector-content';
 import { OutputsPage, ReportCreate, ReportDetail, ReportTemplateDetail, WorkspaceReports } from './ReportPages';
 import { getReportTemplateForBlueprint, reportBelongsToKnownBlueprint, reportConfidences, reportHorizons, reportSeverities } from './report-content';
@@ -984,6 +984,7 @@ function BlueprintDetail() {
         <section className="decision-panel"><span>Decision this Blueprint supports</span><p>{blueprint.decision}</p></section>
         <BlueprintListSection title="Step-by-step installation" items={blueprint.installSteps} />
         <BlueprintInstallPromptSection prompt={blueprint.installPrompt} />
+        <BlueprintCreateWithAISection slug={blueprint.slug} />
         <BlueprintListSection title="Required inputs" items={blueprint.inputs} />
         <section className="blueprint-section"><p className="section-label">MCP connection plan</p><div className="connection-list">{blueprint.connections.map((connection) => <div className="connection-card" key={connection.binding}><div><h3>{connection.name}</h3><p>{connection.purpose}</p><p><strong>Binding:</strong> <code>{connection.binding}</code></p><p><strong>Endpoint:</strong> <code>{connection.endpoint}</code></p></div><span>{connection.access}</span></div>)}</div></section>
         {blueprint.archive
@@ -1004,6 +1005,28 @@ function BlueprintInstallPromptSection({ prompt }) {
     <section className="blueprint-section">
       <p className="section-label">Copyable install prompt</p>
       <PromptBox locale="en" prompt={prompt} />
+    </section>
+  );
+}
+
+function BlueprintCreateWithAISection({ slug }) {
+  const template = getBlueprintTemplate(slug);
+  if (!template) return null;
+  const required = template.requiredBindings.join(', ');
+  const optional = template.optionalBindings.length > 0 ? template.optionalBindings.join(', ') : 'none';
+  return (
+    <section className="blueprint-section">
+      <p className="section-label">Create-with-AI template</p>
+      <div className="decision-panel">
+        <span>How to use</span>
+        <p>Open Cloudflare OS, go to Blueprints, select New Blueprint, then Create with AI. Paste the prompt below and review every change the assistant proposes before publishing.</p>
+        <span>Required MCP bindings</span>
+        <p><code>{required}</code></p>
+        <span>Optional MCP bindings</span>
+        <p><code>{optional}</code></p>
+        <a href={blueprintTemplateUrl(slug)} target="_blank" rel="noreferrer">Open template on GitHub →</a>
+      </div>
+      <PromptBox locale="en" prompt={template.createWithAIPrompt} />
     </section>
   );
 }

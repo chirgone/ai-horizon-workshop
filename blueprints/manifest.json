@@ -18,7 +18,11 @@
       "title": "Cloudflare Account Audit Blueprint",
       "version": 1,
       "file": "Cloudflare-Account-Audit-Blueprint-v1.gadget",
-      "requiredBindings": ["MCP_CLOUDFLARE", "MCP_AUDITLOGS", "MCP_OBSERVABILITY"],
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_AUDITLOGS",
+        "MCP_OBSERVABILITY"
+      ],
       "expectedEndpoints": {
         "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
         "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp",
@@ -34,7 +38,11 @@
       "title": "Cloudflare Attack Surface Risk Blueprint",
       "version": 1,
       "file": "Cloudflare-Attack-Surface-Risk-Blueprint-v1.gadget",
-      "requiredBindings": ["MCP_CLOUDFLARE", "MCP_AUDITLOGS", "MCP_OBSERVABILITY"],
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_AUDITLOGS",
+        "MCP_OBSERVABILITY"
+      ],
       "expectedEndpoints": {
         "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
         "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp",
@@ -50,7 +58,11 @@
       "title": "Cloudflare AI Governance Readiness Blueprint",
       "version": 1,
       "file": "Cloudflare-AI-Governance-Readiness-Blueprint-v1.gadget",
-      "requiredBindings": ["MCP_CLOUDFLARE", "MCP_AUDITLOGS", "MCP_OBSERVABILITY"],
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_AUDITLOGS",
+        "MCP_OBSERVABILITY"
+      ],
       "expectedEndpoints": {
         "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
         "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp",
@@ -66,7 +78,9 @@
       "title": "Cloudflare Radar Intelligence Blueprint",
       "version": 1,
       "file": "Cloudflare-Radar-Intelligence-Blueprint-v1.gadget",
-      "requiredBindings": ["MCP_RADAR"],
+      "requiredBindings": [
+        "MCP_RADAR"
+      ],
       "expectedEndpoints": {
         "MCP_RADAR": "https://radar.mcp.cloudflare.com/mcp"
       },
@@ -74,6 +88,256 @@
       "sha256": "2999d1121676714a88550855d1550e7063edf925cefab8b8d97966b5ed4f7b84",
       "sizeBytes": 14575,
       "description": "Read-only Cloudflare Radar intelligence assessment for domains, IP addresses, ASNs, and countries with evidence classification, geographic comparison, and monitoring roadmap."
+    }
+  ],
+  "templates": [
+    {
+      "slug": "account-audit",
+      "top10": "1",
+      "title": "Cloudflare Account Audit Report",
+      "file": "blueprints/templates/account-audit.md",
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/account-audit.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/account-audit.md",
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_AUDITLOGS",
+        "MCP_GRAPHQL"
+      ],
+      "optionalBindings": [
+        "MCP_OBSERVABILITY"
+      ],
+      "requiredEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_OBSERVABILITY": "https://observability.mcp.cloudflare.com/mcp"
+      }
+    },
+    {
+      "slug": "security-misconfiguration",
+      "top10": "2",
+      "title": "Security Misconfiguration Report",
+      "file": "blueprints/templates/security-misconfiguration.md",
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/security-misconfiguration.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/security-misconfiguration.md",
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_AUDITLOGS",
+        "MCP_GRAPHQL"
+      ],
+      "optionalBindings": [
+        "MCP_CASB"
+      ],
+      "requiredEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_CASB": "https://casb.mcp.cloudflare.com/mcp"
+      }
+    },
+    {
+      "slug": "attack-surface-risk",
+      "top10": "3",
+      "title": "Attack Surface and Risk Report",
+      "file": "blueprints/templates/attack-surface-risk.md",
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/attack-surface-risk.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/attack-surface-risk.md",
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_RADAR",
+        "MCP_DNS_ANALYTICS",
+        "MCP_GRAPHQL"
+      ],
+      "optionalBindings": [],
+      "requiredEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_RADAR": "https://radar.mcp.cloudflare.com/mcp",
+        "MCP_DNS_ANALYTICS": "https://dns-analytics.mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {}
+    },
+    {
+      "slug": "waf-bot-effectiveness",
+      "top10": "4",
+      "title": "WAF and Bot Protection Effectiveness Report",
+      "file": "blueprints/templates/waf-bot-effectiveness.md",
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/waf-bot-effectiveness.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/waf-bot-effectiveness.md",
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_GRAPHQL",
+        "MCP_RADAR"
+      ],
+      "optionalBindings": [],
+      "requiredEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp",
+        "MCP_RADAR": "https://radar.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {}
+    },
+    {
+      "slug": "zero-trust-readiness",
+      "top10": "5",
+      "title": "Zero Trust Readiness Report",
+      "file": "blueprints/templates/zero-trust-readiness.md",
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/zero-trust-readiness.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/zero-trust-readiness.md",
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_AUDITLOGS"
+      ],
+      "optionalBindings": [
+        "MCP_DEX",
+        "MCP_CASB"
+      ],
+      "requiredEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_DEX": "https://dex.mcp.cloudflare.com/mcp",
+        "MCP_CASB": "https://casb.mcp.cloudflare.com/mcp"
+      }
+    },
+    {
+      "slug": "ai-governance-readiness",
+      "top10": "6",
+      "title": "AI Governance Readiness Report",
+      "file": "blueprints/templates/ai-governance-readiness.md",
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/ai-governance-readiness.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/ai-governance-readiness.md",
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_AUDITLOGS",
+        "MCP_AI_GATEWAY"
+      ],
+      "optionalBindings": [
+        "MCP_GRAPHQL"
+      ],
+      "requiredEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp",
+        "MCP_AI_GATEWAY": "https://ai-gateway.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      }
+    },
+    {
+      "slug": "ai-gateway-usage-cost",
+      "top10": "7",
+      "title": "AI Gateway Usage and Cost Report",
+      "file": "blueprints/templates/ai-gateway-usage-cost.md",
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/ai-gateway-usage-cost.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/ai-gateway-usage-cost.md",
+      "requiredBindings": [
+        "MCP_AI_GATEWAY",
+        "MCP_GRAPHQL"
+      ],
+      "optionalBindings": [
+        "MCP_CLOUDFLARE"
+      ],
+      "requiredEndpoints": {
+        "MCP_AI_GATEWAY": "https://ai-gateway.mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp"
+      }
+    },
+    {
+      "slug": "workers-observability-reliability",
+      "top10": "8",
+      "title": "Workers Observability and Reliability Report",
+      "file": "blueprints/templates/workers-observability-reliability.md",
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/workers-observability-reliability.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/workers-observability-reliability.md",
+      "requiredBindings": [
+        "MCP_OBSERVABILITY",
+        "MCP_WORKERS_BUILDS",
+        "MCP_GRAPHQL"
+      ],
+      "optionalBindings": [
+        "MCP_CLOUDFLARE"
+      ],
+      "requiredEndpoints": {
+        "MCP_OBSERVABILITY": "https://observability.mcp.cloudflare.com/mcp",
+        "MCP_WORKERS_BUILDS": "https://builds.mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp"
+      }
+    },
+    {
+      "slug": "dns-internet-performance",
+      "top10": "9",
+      "title": "DNS and Internet Performance Report",
+      "file": "blueprints/templates/dns-internet-performance.md",
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/dns-internet-performance.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/dns-internet-performance.md",
+      "requiredBindings": [
+        "MCP_DNS_ANALYTICS",
+        "MCP_RADAR",
+        "MCP_GRAPHQL"
+      ],
+      "optionalBindings": [
+        "MCP_CLOUDFLARE"
+      ],
+      "requiredEndpoints": {
+        "MCP_DNS_ANALYTICS": "https://dns-analytics.mcp.cloudflare.com/mcp",
+        "MCP_RADAR": "https://radar.mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp"
+      }
+    },
+    {
+      "slug": "compliance-evidence-pack",
+      "top10": "10",
+      "title": "Compliance Evidence Pack",
+      "file": "blueprints/templates/compliance-evidence-pack.md",
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/compliance-evidence-pack.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/compliance-evidence-pack.md",
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_AUDITLOGS",
+        "MCP_GRAPHQL"
+      ],
+      "optionalBindings": [
+        "MCP_CASB"
+      ],
+      "requiredEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_CASB": "https://casb.mcp.cloudflare.com/mcp"
+      }
+    },
+    {
+      "slug": "radar-intelligence",
+      "top10": null,
+      "title": "Cloudflare Radar Intelligence Report",
+      "file": "blueprints/templates/radar-intelligence.md",
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/radar-intelligence.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/radar-intelligence.md",
+      "requiredBindings": [
+        "MCP_RADAR"
+      ],
+      "optionalBindings": [],
+      "requiredEndpoints": {
+        "MCP_RADAR": "https://radar.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {}
     }
   ]
 }

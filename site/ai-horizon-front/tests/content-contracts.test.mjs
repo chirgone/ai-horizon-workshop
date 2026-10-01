@@ -134,6 +134,44 @@ test('Published Blueprint bindings match the archive manifest', async () => {
   }
 });
 
+test('Create-with-AI templates exist and align with manifest and blueprint catalog', async () => {
+  const manifest = JSON.parse(await readFile(new URL('../../../blueprints/manifest.json', import.meta.url), 'utf8'));
+  const index = JSON.parse(await readFile(new URL('../../../blueprints/templates/index.json', import.meta.url), 'utf8'));
+  assert.ok(Array.isArray(manifest.templates), 'manifest.templates must be an array');
+  assert.equal(manifest.templates.length, blueprints.length, 'manifest.templates must have one entry per Blueprint');
+  assert.equal(index.templates.length, blueprints.length, 'template index must have one entry per Blueprint');
+
+  const indexSlugs = index.templates.map(({ slug }) => slug).sort();
+  const blueprintSlugs = blueprints.map(({ slug }) => slug).sort();
+  assert.deepEqual(indexSlugs, blueprintSlugs);
+
+  const manifestSlugs = manifest.templates.map(({ slug }) => slug).sort();
+  assert.deepEqual(manifestSlugs, blueprintSlugs);
+
+  const officialEndpointPrefix = 'https://';
+  for (const template of index.templates) {
+    assert.match(template.publicUrl, /^https:\/\/github\.com\/chirgone\/ai-horizon-workshop\/blob\/main\/blueprints\/templates\//);
+    assert.match(template.rawUrl, /^https:\/\/raw\.githubusercontent\.com\/chirgone\/ai-horizon-workshop\/main\/blueprints\/templates\//);
+    assert.ok(template.requiredBindings.length > 0, `${template.slug} must declare required bindings`);
+    for (const [binding, endpoint] of Object.entries(template.requiredEndpoints)) {
+      assert.ok(template.requiredBindings.includes(binding));
+      assert.ok(endpoint.startsWith(officialEndpointPrefix));
+      assert.match(endpoint, /mcp\.cloudflare\.com\/mcp$/);
+    }
+    for (const endpoint of Object.values(template.optionalEndpoints)) {
+      assert.match(endpoint, /mcp\.cloudflare\.com\/mcp$/);
+    }
+    assert.ok(template.createWithAIPrompt.includes(template.title), `${template.slug} prompt must mention the Blueprint title`);
+    assert.ok(template.createWithAIPrompt.includes('Required MCP bindings'));
+    assert.ok(template.installPrompt.includes('Cloudflare OS'));
+    assert.ok(template.installPrompt.includes('read only'));
+    const markdown = await readFile(new URL(`../../../${template.file}`, import.meta.url), 'utf8');
+    assert.ok(markdown.includes('## Create with AI prompt'));
+    assert.ok(markdown.includes('## Operator install prompt'));
+    assert.ok(!markdown.includes('—'), `${template.slug} must not contain em dashes`);
+  }
+});
+
 test('Start-to-finish runbook covers the blocking workshop gates', () => {
   const runbook = resources.find(({ slug }) => slug === 'start-to-finish-runbook');
   assert.ok(runbook);

@@ -1,0 +1,276 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-30",
+  "templates": [
+    {
+      "slug": "account-audit",
+      "top10": "1",
+      "title": "Cloudflare Account Audit Report",
+      "file": "blueprints/templates/account-audit.md",
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_AUDITLOGS",
+        "MCP_GRAPHQL"
+      ],
+      "optionalBindings": [
+        "MCP_OBSERVABILITY"
+      ],
+      "requiredEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_OBSERVABILITY": "https://observability.mcp.cloudflare.com/mcp"
+      },
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/account-audit.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/account-audit.md",
+      "createWithAIPrompt": "You are the Cloudflare OS Blueprint builder. Create a single purpose, read only assessment Blueprint titled \"Cloudflare Account Audit Report\".\n\nDecision this Blueprint must support:\nWhich account level risks must be remediated first, who owns them, and what evidence supports that priority?\n\nRuntime inputs the Blueprint must ask the operator for (never hardcode account, zone, token, or scope values in the Blueprint itself):\n- Approved Cloudflare account ID and zone scope\n- Named security owner and report audience\n- Approved read-only access boundary\n- Decision deadline and remediation horizon\n- Observation window for audit log review\n\nRequired MCP bindings (use these exact binding names and official endpoints): `MCP_CLOUDFLARE`, `MCP_AUDITLOGS`, `MCP_GRAPHQL`\nOptional MCP bindings: `MCP_OBSERVABILITY`\n\nEvidence requirements:\n- Account members, roles, 2FA state, and API tokens inside scope\n- Zone, ruleset, and ownership inventory inside scope\n- Administrative changes with actor attribution for the observation window\n- Analytics evidence that supports material findings\n- Explicit gaps where access or evidence is unavailable\n\nReport sections, in order:\n- Executive decision\n- Scope and methodology\n- Account configuration findings\n- Prioritized remediation and ownership\n- 30/60/90 day roadmap\n- Evidence appendix with citations\n\nGuardrails:\n- No configuration writes under any condition\n- No material claim without a citation to tool, parameters, and retrieval time\n- Human review owns final severity and risk acceptance\n- Report stays in Draft, review required until human release\n\nStop conditions:\n- Required binding is missing or not reconnected\n- Operator declines to confirm the approved scope\n- No audit log evidence is available for the chosen observation window\n\nEvery material claim in the output must cite the tool name, parameters, scope, and retrieval time. Mark unsupported targets, missing evidence, and tool errors explicitly instead of inventing findings. The output must stay as a Draft, review required PDF until a human reviewer releases it. Do not call any write or destructive tool.",
+      "installPrompt": "Help me install the Cloudflare Account Audit Report in Cloudflare OS. I have the Blueprint ready to upload or created from the Create with AI prompt. Walk me step by step: from the left navigation go to Blueprints, then More blueprint actions, then Upload archive if I have a .gadget file, or accept the Create with AI draft. Reconnect these required MCP bindings with minimum read only access: MCP_CLOUDFLARE, MCP_AUDITLOGS, MCP_GRAPHQL. Treat these optional bindings as planned enrichment only if I confirm the SKU and scope: MCP_OBSERVABILITY. For every connected binding, run one harmless read only tool call and ask me to confirm the response matches the approved scope before you continue. Do not generate the final report until I confirm the scope, owner, observation window, and that every required binding returned usable evidence. Stop and ask me for confirmation before any action that changes scope, access, or writes configuration."
+    },
+    {
+      "slug": "security-misconfiguration",
+      "top10": "2",
+      "title": "Security Misconfiguration Report",
+      "file": "blueprints/templates/security-misconfiguration.md",
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_AUDITLOGS",
+        "MCP_GRAPHQL"
+      ],
+      "optionalBindings": [
+        "MCP_CASB"
+      ],
+      "requiredEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_CASB": "https://casb.mcp.cloudflare.com/mcp"
+      },
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/security-misconfiguration.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/security-misconfiguration.md",
+      "createWithAIPrompt": "You are the Cloudflare OS Blueprint builder. Create a single purpose, read only assessment Blueprint titled \"Security Misconfiguration Report\".\n\nDecision this Blueprint must support:\nWhich security misconfigurations create the most material risk, and which remediations should land first?\n\nRuntime inputs the Blueprint must ask the operator for (never hardcode account, zone, token, or scope values in the Blueprint itself):\n- Approved account and zone scope\n- Named security owner and change authority\n- Critical applications and known control dependencies\n- Remediation horizon and release audience\n- Observation window for change evidence\n\nRequired MCP bindings (use these exact binding names and official endpoints): `MCP_CLOUDFLARE`, `MCP_AUDITLOGS`, `MCP_GRAPHQL`\nOptional MCP bindings: `MCP_CASB`\n\nEvidence requirements:\n- Current security product configuration inside the approved scope\n- Change history and actor attribution for material settings\n- Analytics evidence that supports severity and business impact\n- Observed coverage gaps, exceptions, and inconsistent policy states\n- SaaS posture evidence when CASB is enabled and in scope\n- Explicit evidence gaps where a control cannot be validated\n\nReport sections, in order:\n- Executive risk summary\n- Scope and product coverage\n- Misconfiguration findings with severity\n- Remediation priorities and owners\n- Change evidence appendix\n\nGuardrails:\n- No configuration writes\n- No severity without cited evidence\n- Control owners validate operational impact before release\n- CASB evidence is used only when operator confirms SaaS scope\n\nStop conditions:\n- Operator cannot confirm the approved scope or owner\n- Required bindings are not reconnected\n- Observation window is undefined\n\nEvery material claim in the output must cite the tool name, parameters, scope, and retrieval time. Mark unsupported targets, missing evidence, and tool errors explicitly instead of inventing findings. The output must stay as a Draft, review required PDF until a human reviewer releases it. Do not call any write or destructive tool.",
+      "installPrompt": "Help me install the Security Misconfiguration Report in Cloudflare OS. I have the Blueprint ready to upload or created from the Create with AI prompt. Walk me step by step: from the left navigation go to Blueprints, then More blueprint actions, then Upload archive if I have a .gadget file, or accept the Create with AI draft. Reconnect these required MCP bindings with minimum read only access: MCP_CLOUDFLARE, MCP_AUDITLOGS, MCP_GRAPHQL. Treat these optional bindings as planned enrichment only if I confirm the SKU and scope: MCP_CASB. For every connected binding, run one harmless read only tool call and ask me to confirm the response matches the approved scope before you continue. Do not generate the final report until I confirm the scope, owner, observation window, and that every required binding returned usable evidence. Stop and ask me for confirmation before any action that changes scope, access, or writes configuration."
+    },
+    {
+      "slug": "attack-surface-risk",
+      "top10": "3",
+      "title": "Attack Surface and Risk Report",
+      "file": "blueprints/templates/attack-surface-risk.md",
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_RADAR",
+        "MCP_DNS_ANALYTICS",
+        "MCP_GRAPHQL"
+      ],
+      "optionalBindings": [],
+      "requiredEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_RADAR": "https://radar.mcp.cloudflare.com/mcp",
+        "MCP_DNS_ANALYTICS": "https://dns-analytics.mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {},
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/attack-surface-risk.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/attack-surface-risk.md",
+      "createWithAIPrompt": "You are the Cloudflare OS Blueprint builder. Create a single purpose, read only assessment Blueprint titled \"Attack Surface and Risk Report\".\n\nDecision this Blueprint must support:\nWhich externally reachable assets create the most material risk, and which control changes reduce it fastest?\n\nRuntime inputs the Blueprint must ask the operator for (never hardcode account, zone, token, or scope values in the Blueprint itself):\n- Approved domains, zones, and IP ranges\n- Known business critical applications and API routes\n- Security owner and application owner\n- Allowed external discovery boundary and observation window\n\nRequired MCP bindings (use these exact binding names and official endpoints): `MCP_CLOUDFLARE`, `MCP_RADAR`, `MCP_DNS_ANALYTICS`, `MCP_GRAPHQL`\nOptional MCP bindings: none\n\nEvidence requirements:\n- Externally reachable hostnames, services, and routes inside scope\n- Traffic, DNS, and threat signals linked to exposed assets\n- Existing edge controls and verified coverage gaps\n- Radar and GraphQL analytics that support material risk claims\n- Unknown ownership, stale assets, and contradictory evidence\n\nReport sections, in order:\n- Executive exposure summary\n- Asset and service inventory\n- Risk paths and critical domains\n- Control coverage and gaps\n- Sequenced reduction plan\n\nGuardrails:\n- Passive and approved discovery only\n- No scanning outside the defined boundary\n- create_url_scan on Radar is never enabled\n- Asset owners validate critical exposure before release\n\nStop conditions:\n- Scope boundary is not confirmed in writing by the operator\n- Required bindings are not reconnected\n- Radar returns an unsupported target type for the operator input\n\nEvery material claim in the output must cite the tool name, parameters, scope, and retrieval time. Mark unsupported targets, missing evidence, and tool errors explicitly instead of inventing findings. The output must stay as a Draft, review required PDF until a human reviewer releases it. Do not call any write or destructive tool.",
+      "installPrompt": "Help me install the Attack Surface and Risk Report in Cloudflare OS. I have the Blueprint ready to upload or created from the Create with AI prompt. Walk me step by step: from the left navigation go to Blueprints, then More blueprint actions, then Upload archive if I have a .gadget file, or accept the Create with AI draft. Reconnect these required MCP bindings with minimum read only access: MCP_CLOUDFLARE, MCP_RADAR, MCP_DNS_ANALYTICS, MCP_GRAPHQL. Treat these optional bindings as planned enrichment only if I confirm the SKU and scope: none. For every connected binding, run one harmless read only tool call and ask me to confirm the response matches the approved scope before you continue. Do not generate the final report until I confirm the scope, owner, observation window, and that every required binding returned usable evidence. Stop and ask me for confirmation before any action that changes scope, access, or writes configuration."
+    },
+    {
+      "slug": "waf-bot-effectiveness",
+      "top10": "4",
+      "title": "WAF and Bot Protection Effectiveness Report",
+      "file": "blueprints/templates/waf-bot-effectiveness.md",
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_GRAPHQL",
+        "MCP_RADAR"
+      ],
+      "optionalBindings": [],
+      "requiredEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp",
+        "MCP_RADAR": "https://radar.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {},
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/waf-bot-effectiveness.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/waf-bot-effectiveness.md",
+      "createWithAIPrompt": "You are the Cloudflare OS Blueprint builder. Create a single purpose, read only assessment Blueprint titled \"WAF and Bot Protection Effectiveness Report\".\n\nDecision this Blueprint must support:\nWhich Internet facing paths remain under protected, and which controls reduce exploitability fastest?\n\nRuntime inputs the Blueprint must ask the operator for (never hardcode account, zone, token, or scope values in the Blueprint itself):\n- Approved zones, hostnames, and API scope\n- Known critical applications and high value endpoints\n- Named application security owner\n- Observation window for attack and traffic signals\n\nRequired MCP bindings (use these exact binding names and official endpoints): `MCP_CLOUDFLARE`, `MCP_GRAPHQL`, `MCP_RADAR`\nOptional MCP bindings: none\n\nEvidence requirements:\n- Observed attack, request, and bot patterns for scoped applications\n- Current WAF, Bot Management, API Shield, and rate limiting coverage\n- Known gaps, bypass paths, and exceptions that weaken protection\n- Control tuning opportunities supported by cited traffic evidence\n- Explicit evidence gaps for endpoints without analytics\n\nReport sections, in order:\n- Executive protection summary\n- Scoped applications and endpoints\n- Observed attack patterns\n- Coverage gaps and vulnerable paths\n- Recommended control changes\n\nGuardrails:\n- No active testing without explicit written approval\n- Differentiate blocked traffic from assumed exposure\n- Application owners review high impact recommendations before release\n\nStop conditions:\n- GraphQL returns no data for the chosen observation window\n- Required bindings are not reconnected\n- Operator cannot confirm high value endpoint ownership\n\nEvery material claim in the output must cite the tool name, parameters, scope, and retrieval time. Mark unsupported targets, missing evidence, and tool errors explicitly instead of inventing findings. The output must stay as a Draft, review required PDF until a human reviewer releases it. Do not call any write or destructive tool.",
+      "installPrompt": "Help me install the WAF and Bot Protection Effectiveness Report in Cloudflare OS. I have the Blueprint ready to upload or created from the Create with AI prompt. Walk me step by step: from the left navigation go to Blueprints, then More blueprint actions, then Upload archive if I have a .gadget file, or accept the Create with AI draft. Reconnect these required MCP bindings with minimum read only access: MCP_CLOUDFLARE, MCP_GRAPHQL, MCP_RADAR. Treat these optional bindings as planned enrichment only if I confirm the SKU and scope: none. For every connected binding, run one harmless read only tool call and ask me to confirm the response matches the approved scope before you continue. Do not generate the final report until I confirm the scope, owner, observation window, and that every required binding returned usable evidence. Stop and ask me for confirmation before any action that changes scope, access, or writes configuration."
+    },
+    {
+      "slug": "zero-trust-readiness",
+      "top10": "5",
+      "title": "Zero Trust Readiness Report",
+      "file": "blueprints/templates/zero-trust-readiness.md",
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_AUDITLOGS"
+      ],
+      "optionalBindings": [
+        "MCP_DEX",
+        "MCP_CASB"
+      ],
+      "requiredEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_DEX": "https://dex.mcp.cloudflare.com/mcp",
+        "MCP_CASB": "https://casb.mcp.cloudflare.com/mcp"
+      },
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/zero-trust-readiness.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/zero-trust-readiness.md",
+      "createWithAIPrompt": "You are the Cloudflare OS Blueprint builder. Create a single purpose, read only assessment Blueprint titled \"Zero Trust Readiness Report\".\n\nDecision this Blueprint must support:\nWhat blocks Zero Trust rollout today, and which sequence closes the highest value gaps first?\n\nRuntime inputs the Blueprint must ask the operator for (never hardcode account, zone, token, or scope values in the Blueprint itself):\n- Approved application and user population scope\n- Named Zero Trust owner and endpoint owner\n- Current identity, device, and remote access assumptions\n- Target rollout horizon and control priorities\n\nRequired MCP bindings (use these exact binding names and official endpoints): `MCP_CLOUDFLARE`, `MCP_AUDITLOGS`\nOptional MCP bindings: `MCP_DEX`, `MCP_CASB`\n\nEvidence requirements:\n- Applications, users, and access paths inside the approved scope\n- Current Access, Gateway, DLP, CASB, and posture coverage\n- Gaps in identity, device trust, or policy enforcement\n- DEX signals for critical applications when DEX is enabled and in scope\n- SaaS posture evidence when CASB is enabled and in scope\n- Explicit exclusions and unvalidated device or user segments\n\nReport sections, in order:\n- Executive readiness decision\n- Scoped applications and users\n- Access and posture findings\n- Zero Trust control gaps\n- Phased rollout roadmap\n\nGuardrails:\n- No user content collection beyond approved scope\n- Separate observed controls from target state recommendations\n- Identity and endpoint owners review rollout assumptions\n- Optional MCP evidence is used only when the operator confirms the SKU and scope\n\nStop conditions:\n- Operator cannot confirm identity or endpoint ownership\n- Required bindings are not reconnected\n- Scope mixes populations without written approval\n\nEvery material claim in the output must cite the tool name, parameters, scope, and retrieval time. Mark unsupported targets, missing evidence, and tool errors explicitly instead of inventing findings. The output must stay as a Draft, review required PDF until a human reviewer releases it. Do not call any write or destructive tool.",
+      "installPrompt": "Help me install the Zero Trust Readiness Report in Cloudflare OS. I have the Blueprint ready to upload or created from the Create with AI prompt. Walk me step by step: from the left navigation go to Blueprints, then More blueprint actions, then Upload archive if I have a .gadget file, or accept the Create with AI draft. Reconnect these required MCP bindings with minimum read only access: MCP_CLOUDFLARE, MCP_AUDITLOGS. Treat these optional bindings as planned enrichment only if I confirm the SKU and scope: MCP_DEX, MCP_CASB. For every connected binding, run one harmless read only tool call and ask me to confirm the response matches the approved scope before you continue. Do not generate the final report until I confirm the scope, owner, observation window, and that every required binding returned usable evidence. Stop and ask me for confirmation before any action that changes scope, access, or writes configuration."
+    },
+    {
+      "slug": "ai-governance-readiness",
+      "top10": "6",
+      "title": "AI Governance Readiness Report",
+      "file": "blueprints/templates/ai-governance-readiness.md",
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_AUDITLOGS",
+        "MCP_AI_GATEWAY"
+      ],
+      "optionalBindings": [
+        "MCP_GRAPHQL"
+      ],
+      "requiredEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp",
+        "MCP_AI_GATEWAY": "https://ai-gateway.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/ai-governance-readiness.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/ai-governance-readiness.md",
+      "createWithAIPrompt": "You are the Cloudflare OS Blueprint builder. Create a single purpose, read only assessment Blueprint titled \"AI Governance Readiness Report\".\n\nDecision this Blueprint must support:\nWhere can the organization safely scale AI, and which governance gaps must close before broader adoption?\n\nRuntime inputs the Blueprint must ask the operator for (never hardcode account, zone, token, or scope values in the Blueprint itself):\n- Approved AI application and team scope\n- Current AI policy or stated operating principles\n- Security, legal, and data governance owners\n- Target AI use cases and adoption timeline\n- Observation window for AI usage evidence\n\nRequired MCP bindings (use these exact binding names and official endpoints): `MCP_CLOUDFLARE`, `MCP_AUDITLOGS`, `MCP_AI_GATEWAY`\nOptional MCP bindings: `MCP_GRAPHQL`\n\nEvidence requirements:\n- Observed AI applications, models, teams, and usage patterns\n- AI Gateway logs and routing evidence inside scope\n- Policy controls mapped to actual technical visibility\n- Data handling, logging, and ownership gaps\n- Unobserved or unverified usage recorded as an explicit limitation\n\nReport sections, in order:\n- Executive readiness decision\n- Observed AI landscape\n- Governance maturity\n- Control gaps and ownership\n- Adoption roadmap\n\nGuardrails:\n- Do not collect prompt content unless explicitly approved\n- Minimize personal and sensitive data in cited evidence\n- Legal and security owners approve policy conclusions\n- AI Gateway evidence is scoped to approved projects only\n\nStop conditions:\n- Operator cannot confirm policy owner or application scope\n- Required bindings are not reconnected\n- AI Gateway returns no evidence inside the chosen window\n\nEvery material claim in the output must cite the tool name, parameters, scope, and retrieval time. Mark unsupported targets, missing evidence, and tool errors explicitly instead of inventing findings. The output must stay as a Draft, review required PDF until a human reviewer releases it. Do not call any write or destructive tool.",
+      "installPrompt": "Help me install the AI Governance Readiness Report in Cloudflare OS. I have the Blueprint ready to upload or created from the Create with AI prompt. Walk me step by step: from the left navigation go to Blueprints, then More blueprint actions, then Upload archive if I have a .gadget file, or accept the Create with AI draft. Reconnect these required MCP bindings with minimum read only access: MCP_CLOUDFLARE, MCP_AUDITLOGS, MCP_AI_GATEWAY. Treat these optional bindings as planned enrichment only if I confirm the SKU and scope: MCP_GRAPHQL. For every connected binding, run one harmless read only tool call and ask me to confirm the response matches the approved scope before you continue. Do not generate the final report until I confirm the scope, owner, observation window, and that every required binding returned usable evidence. Stop and ask me for confirmation before any action that changes scope, access, or writes configuration."
+    },
+    {
+      "slug": "ai-gateway-usage-cost",
+      "top10": "7",
+      "title": "AI Gateway Usage and Cost Report",
+      "file": "blueprints/templates/ai-gateway-usage-cost.md",
+      "requiredBindings": [
+        "MCP_AI_GATEWAY",
+        "MCP_GRAPHQL"
+      ],
+      "optionalBindings": [
+        "MCP_CLOUDFLARE"
+      ],
+      "requiredEndpoints": {
+        "MCP_AI_GATEWAY": "https://ai-gateway.mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp"
+      },
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/ai-gateway-usage-cost.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/ai-gateway-usage-cost.md",
+      "createWithAIPrompt": "You are the Cloudflare OS Blueprint builder. Create a single purpose, read only assessment Blueprint titled \"AI Gateway Usage and Cost Report\".\n\nDecision this Blueprint must support:\nWhich routing, caching, and model choices reduce cost without weakening reliability or governance?\n\nRuntime inputs the Blueprint must ask the operator for (never hardcode account, zone, token, or scope values in the Blueprint itself):\n- Approved AI Gateway scope and observation window\n- Named AI platform owner and finance reviewer\n- Critical applications or workflows using AI\n- Target cost and latency objectives\n\nRequired MCP bindings (use these exact binding names and official endpoints): `MCP_AI_GATEWAY`, `MCP_GRAPHQL`\nOptional MCP bindings: `MCP_CLOUDFLARE`\n\nEvidence requirements:\n- Model, provider, and route level usage inside scope\n- Latency, error, and caching patterns tied to user experience or cost\n- Routing decisions, fallback paths, and concentration risks\n- Analytics evidence from GraphQL that confirms AI Gateway signals\n- Observed opportunities for guardrails, caching, or provider diversification\n\nReport sections, in order:\n- Executive optimization summary\n- Usage and provider profile\n- Cost and latency drivers\n- Reliability and routing findings\n- Optimization roadmap\n\nGuardrails:\n- Do not expose prompt content unless explicitly approved\n- Separate direct cost evidence from inferred savings\n- Platform owners validate material routing changes before release\n\nStop conditions:\n- AI Gateway returns no data for the chosen window\n- Operator cannot confirm the approved projects\n- Required bindings are not reconnected\n\nEvery material claim in the output must cite the tool name, parameters, scope, and retrieval time. Mark unsupported targets, missing evidence, and tool errors explicitly instead of inventing findings. The output must stay as a Draft, review required PDF until a human reviewer releases it. Do not call any write or destructive tool.",
+      "installPrompt": "Help me install the AI Gateway Usage and Cost Report in Cloudflare OS. I have the Blueprint ready to upload or created from the Create with AI prompt. Walk me step by step: from the left navigation go to Blueprints, then More blueprint actions, then Upload archive if I have a .gadget file, or accept the Create with AI draft. Reconnect these required MCP bindings with minimum read only access: MCP_AI_GATEWAY, MCP_GRAPHQL. Treat these optional bindings as planned enrichment only if I confirm the SKU and scope: MCP_CLOUDFLARE. For every connected binding, run one harmless read only tool call and ask me to confirm the response matches the approved scope before you continue. Do not generate the final report until I confirm the scope, owner, observation window, and that every required binding returned usable evidence. Stop and ask me for confirmation before any action that changes scope, access, or writes configuration."
+    },
+    {
+      "slug": "workers-observability-reliability",
+      "top10": "8",
+      "title": "Workers Observability and Reliability Report",
+      "file": "blueprints/templates/workers-observability-reliability.md",
+      "requiredBindings": [
+        "MCP_OBSERVABILITY",
+        "MCP_WORKERS_BUILDS",
+        "MCP_GRAPHQL"
+      ],
+      "optionalBindings": [
+        "MCP_CLOUDFLARE"
+      ],
+      "requiredEndpoints": {
+        "MCP_OBSERVABILITY": "https://observability.mcp.cloudflare.com/mcp",
+        "MCP_WORKERS_BUILDS": "https://builds.mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp"
+      },
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/workers-observability-reliability.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/workers-observability-reliability.md",
+      "createWithAIPrompt": "You are the Cloudflare OS Blueprint builder. Create a single purpose, read only assessment Blueprint titled \"Workers Observability and Reliability Report\".\n\nDecision this Blueprint must support:\nWhich services or deployment patterns create the highest reliability risk, and what corrective actions come first?\n\nRuntime inputs the Blueprint must ask the operator for (never hardcode account, zone, token, or scope values in the Blueprint itself):\n- Approved Worker services and environments\n- Named engineering owner and review audience\n- Observation window for incidents and deployments\n- Production criticality and recovery expectations\n\nRequired MCP bindings (use these exact binding names and official endpoints): `MCP_OBSERVABILITY`, `MCP_WORKERS_BUILDS`, `MCP_GRAPHQL`\nOptional MCP bindings: `MCP_CLOUDFLARE`\n\nEvidence requirements:\n- Worker level error, latency, and log evidence inside scope\n- Deployment outcomes, rollback patterns, and build failures\n- Concentration of incidents by service, route, or release window\n- Analytics evidence that supports reliability conclusions\n- Explicit limitations where observability is missing or incomplete\n\nReport sections, in order:\n- Executive reliability summary\n- Scoped services and environments\n- Error and latency findings\n- Deployment and build findings\n- Corrective action plan\n\nGuardrails:\n- No production writes or rollbacks\n- Do not overstate root cause without evidence\n- Engineering owners review service critical conclusions before release\n\nStop conditions:\n- Operator cannot confirm the approved services or environments\n- Required bindings are not reconnected\n- Observability signals are missing for the chosen window\n\nEvery material claim in the output must cite the tool name, parameters, scope, and retrieval time. Mark unsupported targets, missing evidence, and tool errors explicitly instead of inventing findings. The output must stay as a Draft, review required PDF until a human reviewer releases it. Do not call any write or destructive tool.",
+      "installPrompt": "Help me install the Workers Observability and Reliability Report in Cloudflare OS. I have the Blueprint ready to upload or created from the Create with AI prompt. Walk me step by step: from the left navigation go to Blueprints, then More blueprint actions, then Upload archive if I have a .gadget file, or accept the Create with AI draft. Reconnect these required MCP bindings with minimum read only access: MCP_OBSERVABILITY, MCP_WORKERS_BUILDS, MCP_GRAPHQL. Treat these optional bindings as planned enrichment only if I confirm the SKU and scope: MCP_CLOUDFLARE. For every connected binding, run one harmless read only tool call and ask me to confirm the response matches the approved scope before you continue. Do not generate the final report until I confirm the scope, owner, observation window, and that every required binding returned usable evidence. Stop and ask me for confirmation before any action that changes scope, access, or writes configuration."
+    },
+    {
+      "slug": "dns-internet-performance",
+      "top10": "9",
+      "title": "DNS and Internet Performance Report",
+      "file": "blueprints/templates/dns-internet-performance.md",
+      "requiredBindings": [
+        "MCP_DNS_ANALYTICS",
+        "MCP_RADAR",
+        "MCP_GRAPHQL"
+      ],
+      "optionalBindings": [
+        "MCP_CLOUDFLARE"
+      ],
+      "requiredEndpoints": {
+        "MCP_DNS_ANALYTICS": "https://dns-analytics.mcp.cloudflare.com/mcp",
+        "MCP_RADAR": "https://radar.mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp"
+      },
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/dns-internet-performance.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/dns-internet-performance.md",
+      "createWithAIPrompt": "You are the Cloudflare OS Blueprint builder. Create a single purpose, read only assessment Blueprint titled \"DNS and Internet Performance Report\".\n\nDecision this Blueprint must support:\nWhich DNS and Internet performance issues deserve immediate action, and which need ongoing monitoring?\n\nRuntime inputs the Blueprint must ask the operator for (never hardcode account, zone, token, or scope values in the Blueprint itself):\n- Approved zones, domains, and observation window\n- Named DNS owner and report audience\n- Known business critical domains or regional dependencies\n- Performance objective or customer facing concern\n\nRequired MCP bindings (use these exact binding names and official endpoints): `MCP_DNS_ANALYTICS`, `MCP_RADAR`, `MCP_GRAPHQL`\nOptional MCP bindings: `MCP_CLOUDFLARE`\n\nEvidence requirements:\n- DNS health, latency, and query trends inside scope\n- Regional Internet signals that affect customer experience or resilience\n- Configuration patterns linked to performance or failure risk\n- Analytics evidence that confirms DNS findings\n- Unknown or unverified DNS dependencies called out explicitly\n\nReport sections, in order:\n- Executive performance summary\n- Scoped zones and regions\n- DNS health findings\n- Regional Internet observations\n- Improvement recommendations\n\nGuardrails:\n- No active DNS changes\n- Keep Radar and zone specific evidence clearly separated\n- DNS owners validate business critical assumptions before release\n- create_url_scan on Radar is never enabled\n\nStop conditions:\n- Operator cannot confirm the approved zones\n- Required bindings are not reconnected\n- Radar returns an unsupported target for the operator input\n\nEvery material claim in the output must cite the tool name, parameters, scope, and retrieval time. Mark unsupported targets, missing evidence, and tool errors explicitly instead of inventing findings. The output must stay as a Draft, review required PDF until a human reviewer releases it. Do not call any write or destructive tool.",
+      "installPrompt": "Help me install the DNS and Internet Performance Report in Cloudflare OS. I have the Blueprint ready to upload or created from the Create with AI prompt. Walk me step by step: from the left navigation go to Blueprints, then More blueprint actions, then Upload archive if I have a .gadget file, or accept the Create with AI draft. Reconnect these required MCP bindings with minimum read only access: MCP_DNS_ANALYTICS, MCP_RADAR, MCP_GRAPHQL. Treat these optional bindings as planned enrichment only if I confirm the SKU and scope: MCP_CLOUDFLARE. For every connected binding, run one harmless read only tool call and ask me to confirm the response matches the approved scope before you continue. Do not generate the final report until I confirm the scope, owner, observation window, and that every required binding returned usable evidence. Stop and ask me for confirmation before any action that changes scope, access, or writes configuration."
+    },
+    {
+      "slug": "compliance-evidence-pack",
+      "top10": "10",
+      "title": "Compliance Evidence Pack",
+      "file": "blueprints/templates/compliance-evidence-pack.md",
+      "requiredBindings": [
+        "MCP_CLOUDFLARE",
+        "MCP_AUDITLOGS",
+        "MCP_GRAPHQL"
+      ],
+      "optionalBindings": [
+        "MCP_CASB"
+      ],
+      "requiredEndpoints": {
+        "MCP_CLOUDFLARE": "https://mcp.cloudflare.com/mcp",
+        "MCP_AUDITLOGS": "https://auditlogs.mcp.cloudflare.com/mcp",
+        "MCP_GRAPHQL": "https://graphql.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {
+        "MCP_CASB": "https://casb.mcp.cloudflare.com/mcp"
+      },
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/compliance-evidence-pack.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/compliance-evidence-pack.md",
+      "createWithAIPrompt": "You are the Cloudflare OS Blueprint builder. Create a single purpose, read only assessment Blueprint titled \"Compliance Evidence Pack\".\n\nDecision this Blueprint must support:\nWhat evidence is audit ready today, what is missing, and which exceptions require explicit owner action?\n\nRuntime inputs the Blueprint must ask the operator for (never hardcode account, zone, token, or scope values in the Blueprint itself):\n- Approved control framework or audit objective\n- Named compliance owner and reviewer\n- Relevant accounts, zones, or products in scope\n- Target audit window and delivery deadline\n\nRequired MCP bindings (use these exact binding names and official endpoints): `MCP_CLOUDFLARE`, `MCP_AUDITLOGS`, `MCP_GRAPHQL`\nOptional MCP bindings: `MCP_CASB`\n\nEvidence requirements:\n- Configured controls mapped to the approved audit objective\n- Recent administrative changes with actor attribution\n- Administrative access, exceptions, and compensating controls\n- SaaS posture evidence when CASB is enabled and in scope\n- Explicit missing evidence or controls that need owner follow up\n\nReport sections, in order:\n- Audit objective and scope\n- Control evidence summary\n- Administrative access and changes\n- Exceptions and gaps\n- Export package index with citations\n\nGuardrails:\n- Do not claim certification or compliance status without owner approval\n- Preserve exact evidence timestamps and scope\n- Compliance owners validate final mapping before release\n- CASB evidence is used only when operator confirms SaaS scope\n\nStop conditions:\n- Audit objective or control framework is not confirmed\n- Required bindings are not reconnected\n- Observation window is undefined\n\nEvery material claim in the output must cite the tool name, parameters, scope, and retrieval time. Mark unsupported targets, missing evidence, and tool errors explicitly instead of inventing findings. The output must stay as a Draft, review required PDF until a human reviewer releases it. Do not call any write or destructive tool.",
+      "installPrompt": "Help me install the Compliance Evidence Pack in Cloudflare OS. I have the Blueprint ready to upload or created from the Create with AI prompt. Walk me step by step: from the left navigation go to Blueprints, then More blueprint actions, then Upload archive if I have a .gadget file, or accept the Create with AI draft. Reconnect these required MCP bindings with minimum read only access: MCP_CLOUDFLARE, MCP_AUDITLOGS, MCP_GRAPHQL. Treat these optional bindings as planned enrichment only if I confirm the SKU and scope: MCP_CASB. For every connected binding, run one harmless read only tool call and ask me to confirm the response matches the approved scope before you continue. Do not generate the final report until I confirm the scope, owner, observation window, and that every required binding returned usable evidence. Stop and ask me for confirmation before any action that changes scope, access, or writes configuration."
+    },
+    {
+      "slug": "radar-intelligence",
+      "top10": null,
+      "title": "Cloudflare Radar Intelligence Report",
+      "file": "blueprints/templates/radar-intelligence.md",
+      "requiredBindings": [
+        "MCP_RADAR"
+      ],
+      "optionalBindings": [],
+      "requiredEndpoints": {
+        "MCP_RADAR": "https://radar.mcp.cloudflare.com/mcp"
+      },
+      "optionalEndpoints": {},
+      "publicUrl": "https://github.com/chirgone/ai-horizon-workshop/blob/main/blueprints/templates/radar-intelligence.md",
+      "rawUrl": "https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/templates/radar-intelligence.md",
+      "createWithAIPrompt": "You are the Cloudflare OS Blueprint builder. Create a single purpose, read only assessment Blueprint titled \"Cloudflare Radar Intelligence Report\".\n\nDecision this Blueprint must support:\nWhat does Cloudflare Radar directly show about this target, what remains unknown, and what should the team monitor next?\n\nRuntime inputs the Blueprint must ask the operator for (never hardcode account, zone, token, or scope values in the Blueprint itself):\n- One target type: domain, IP address, ASN, or country\n- Exact target value and a fixed observation window\n- Optional comparison country recorded separately from the target\n- Named analyst, reviewer, and report audience\n\nRequired MCP bindings (use these exact binding names and official endpoints): `MCP_RADAR`\nOptional MCP bindings: none\n\nEvidence requirements:\n- Target specific results returned by a named Radar MCP tool\n- Exact tool, parameters, target, time window, and retrieval timestamp\n- Geographic comparison stored separately from target evidence\n- Unsupported, failed, or intentionally skipped checks labeled explicitly\n\nReport sections, in order:\n- Executive intelligence summary\n- Target and observation window\n- Direct evidence\n- Geographic comparison\n- Findings and limitations\n- Monitoring roadmap\n\nGuardrails:\n- Never enable create_url_scan\n- Do not attribute country level HTTP, DNS, or L7 data to a domain\n- Keep status as Draft, review required until human review\n\nStop conditions:\n- Operator cannot name a single target type\n- MCP_RADAR is not reconnected\n- Radar returns an unsupported target for the operator input\n\nEvery material claim in the output must cite the tool name, parameters, scope, and retrieval time. Mark unsupported targets, missing evidence, and tool errors explicitly instead of inventing findings. The output must stay as a Draft, review required PDF until a human reviewer releases it. Do not call any write or destructive tool.",
+      "installPrompt": "Help me install the Cloudflare Radar Intelligence Report in Cloudflare OS. I have the Blueprint ready to upload or created from the Create with AI prompt. Walk me step by step: from the left navigation go to Blueprints, then More blueprint actions, then Upload archive if I have a .gadget file, or accept the Create with AI draft. Reconnect these required MCP bindings with minimum read only access: MCP_RADAR. Treat these optional bindings as planned enrichment only if I confirm the SKU and scope: none. For every connected binding, run one harmless read only tool call and ask me to confirm the response matches the approved scope before you continue. Do not generate the final report until I confirm the scope, owner, observation window, and that every required binding returned usable evidence. Stop and ask me for confirmation before any action that changes scope, access, or writes configuration."
+    }
+  ]
+}

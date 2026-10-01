@@ -55,6 +55,10 @@ Canonical workspace for the customer-facing Cloudflare OS workshop. The workshop
 
 See `blueprints/TOP-REPORT-BLUEPRINTS.md` for the full planning catalog, MCP suggestions, and expected outputs.
 
+### Blueprint templates and Create with AI prompts
+
+Every Blueprint, including the four published archives and the seven planning candidates, ships with a sanitized specification and a Create with AI prompt under `blueprints/templates/<slug>.md`. These templates let any operator rebuild the Blueprint from scratch inside any Cloudflare OS workspace using the officially published Cloudflare remote MCP servers. The front-end exposes the same template on each Blueprint detail page under the Create-with-AI template section.
+
 ## Local front-end
 
 ```bash
