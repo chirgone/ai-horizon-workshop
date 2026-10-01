@@ -2171,6 +2171,20 @@ a.hub-card:hover {
   line-height: 1.5;
 }
 
+.aside-link {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+}
+
+.aside-link:hover {
+  color: var(--brand);
+}
+
 .blueprint-detail-content {
   overflow: hidden;
   border: 1px solid rgba(226, 214, 198, 0.8);

@@ -4,7 +4,7 @@ const coreAccountConnections = [
   { name: 'Workers Observability MCP', binding: 'MCP_OBSERVABILITY', endpoint: 'https://observability.mcp.cloudflare.com/mcp', purpose: 'Worker inventory, code, logs, and metrics', access: 'Required, read-only and approval-gated queries' },
 ];
 
-const blueprintArchiveUrl = (file) => `https://gitlab.cfdata.org/janguiano/ai-horizon-workshop/-/raw/main/blueprints/${file}`;
+const blueprintArchiveUrl = (file) => `https://raw.githubusercontent.com/chirgone/ai-horizon-workshop/main/blueprints/${file}`;
 const planningConnection = (name, binding, purpose) => ({
   name,
   binding,
